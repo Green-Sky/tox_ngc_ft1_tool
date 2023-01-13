@@ -6,6 +6,15 @@ project(tox_ngc_ft1_tool C CXX)
 
 add_executable(tox_ngc_ft1_tool
 	./main.cpp
+
+	./command_line.hpp
+	./command_line.cpp
+
+	./tox_utils.hpp
+	./tox_utils.cpp
+
+	./tox_client.hpp
+	./tox_client.cpp
 )
 
 target_compile_features(tox_ngc_ft1_tool PUBLIC cxx_std_17)
