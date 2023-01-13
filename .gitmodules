@@ -1,0 +1,11 @@
+[submodule "external/toxcore/c-toxcore"]
+	path = external/toxcore/c-toxcore
+	url = https://github.com/TokTok/c-toxcore.git
+	shallow = true
+	ignore = dirty
+[submodule "external/tox_ngc_ext/tox_ngc_ext"]
+	path = external/tox_ngc_ext/tox_ngc_ext
+	url = https://github.com/Green-Sky/tox_ngc_ext
+[submodule "external/tox_ngc_ft1/tox_ngc_ft1"]
+	path = external/tox_ngc_ft1/tox_ngc_ft1
+	url = https://github.com/Green-Sky/tox_ngc_ft1
