@@ -65,8 +65,8 @@ ToxClient::ToxClient(const CommandLine& cl) :
 		throw std::runtime_error{"tox failed"};
 	}
 
-#define CALLBACK_REG(x) tox_callback_##x(_tox, x##_cb)
-	CALLBACK_REG(self_connection_status);
+#define TOX_CALLBACK_REG(x) tox_callback_##x(_tox, x##_cb)
+	TOX_CALLBACK_REG(self_connection_status);
 
 	//CALLBACK_REG(friend_name);
 	//CALLBACK_REG(friend_status_message);
@@ -74,7 +74,7 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	//CALLBACK_REG(friend_connection_status);
 	//CALLBACK_REG(friend_typing);
 	//CALLBACK_REG(friend_read_receipt);
-	CALLBACK_REG(friend_request);
+	TOX_CALLBACK_REG(friend_request);
 	//CALLBACK_REG(friend_message);
 
 	//CALLBACK_REG(file_recv_control);
@@ -92,10 +92,13 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	//CALLBACK_REG(friend_lossy_packet);
 	//CALLBACK_REG(friend_lossless_packet);
 
-	CALLBACK_REG(group_custom_packet);
-	CALLBACK_REG(group_custom_private_packet);
-	CALLBACK_REG(group_invite);
-#undef CALLBACK_REG
+	TOX_CALLBACK_REG(group_custom_packet);
+	TOX_CALLBACK_REG(group_custom_private_packet);
+	TOX_CALLBACK_REG(group_invite);
+	TOX_CALLBACK_REG(group_peer_join);
+	TOX_CALLBACK_REG(group_peer_exit);
+	TOX_CALLBACK_REG(group_self_join);
+#undef TOX_CALLBACK_REG
 
 	if (_self_name.empty()) {
 		_self_name = "tox_ngc_ft1_tool";
@@ -107,6 +110,18 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	NGC_FT1_options ft1_options {};
 	_ft1_ctx = NGC_FT1_new(&ft1_options);
 	NGC_FT1_register_ext(_ft1_ctx, _ext_ctx);
+
+	// sha1_info
+	NGC_FT1_register_callback_recv_request(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_INFO, ft1_recv_request_sha1_info_cb, this);
+	NGC_FT1_register_callback_recv_init(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_INFO, ft1_recv_init_sha1_info_cb, this);
+	NGC_FT1_register_callback_recv_data(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_INFO, ft1_recv_data_sha1_info_cb, this);
+	NGC_FT1_register_callback_send_data(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_INFO, ft1_send_data_sha1_info_cb, this);
+
+	// sha1_chunk
+	NGC_FT1_register_callback_recv_request(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_CHUNK, ft1_recv_request_sha1_chunk_cb, this);
+	NGC_FT1_register_callback_recv_init(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_CHUNK, ft1_recv_init_sha1_chunk_cb, this);
+	NGC_FT1_register_callback_recv_data(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_CHUNK, ft1_recv_data_sha1_chunk_cb, this);
+	NGC_FT1_register_callback_send_data(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_CHUNK, ft1_send_data_sha1_chunk_cb, this);
 
 	// dht bootstrap
 	{
@@ -213,6 +228,34 @@ void ToxClient::onToxGroupPeerExit(uint32_t group_number, uint32_t peer_id, Tox_
 void ToxClient::onToxGroupSelfJoin(uint32_t group_number) {
 	std::cout << "TCL group self join " << group_number << "\n";
 	_tox_profile_dirty = true;
+}
+
+// sha1_info
+void ToxClient::onFT1ReceiveRequestSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size) {
+}
+
+bool ToxClient::onFT1ReceiveInitSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size) {
+	return false; // deny
+}
+
+void ToxClient::onFT1ReceiveDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size) {
+}
+
+void ToxClient::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
+}
+
+// sha1_chunk
+void ToxClient::onFT1ReceiveRequestSHA1Chunk(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size) {
+}
+
+bool ToxClient::onFT1ReceiveInitSHA1Chunk(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size) {
+	return false; // deny
+}
+
+void ToxClient::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size) {
+}
+
+void ToxClient::onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
 }
 
 void ToxClient::saveToxProfile(void) {

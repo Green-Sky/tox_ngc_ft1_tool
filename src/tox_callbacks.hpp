@@ -38,3 +38,17 @@ void group_self_join_cb(Tox *tox, uint32_t group_number, void *user_data);
 //static void group_join_fail_cb(Tox *tox, uint32_t group_number, Tox_Group_Join_Fail fail_type, void *user_data);
 //static void group_moderation_cb(Tox *tox, uint32_t group_number, uint32_t source_peer_id, uint32_t target_peer_id, Tox_Group_Mod_Event mod_type, void *user_data);
 
+// ft1
+
+// sha1_info
+void ft1_recv_request_sha1_info_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, void* user_data);
+bool ft1_recv_init_sha1_info_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size, void* user_data);
+void ft1_recv_data_sha1_info_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size, void* user_data);
+void ft1_send_data_sha1_info_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size, void* user_data);
+
+// sha1_chunk
+void ft1_recv_request_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, void* user_data);
+bool ft1_recv_init_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size, void* user_data);
+void ft1_recv_data_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size, void* user_data);
+void ft1_send_data_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size, void* user_data);
+

@@ -5,6 +5,8 @@
 #include <string_view>
 #include <iostream>
 
+// TODO: maybe a dispatch table is better?
+
 // logging
 void log_cb(Tox*, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func, const char *message, void *user_data) {
 	//ToxClient* client = static_cast<ToxClient*>(user_data);
@@ -41,5 +43,41 @@ void group_peer_exit_cb(Tox*, uint32_t group_number, uint32_t peer_id, Tox_Group
 
 void group_self_join_cb(Tox*, uint32_t group_number, void *user_data) {
 	static_cast<ToxClient*>(user_data)->onToxGroupSelfJoin(group_number);
+}
+
+// ==================== sha1_info ====================
+
+void ft1_recv_request_sha1_info_cb(Tox*, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, void* user_data) {
+	static_cast<ToxClient*>(user_data)->onFT1ReceiveRequestSHA1Info(group_number, peer_number, file_id, file_id_size);
+}
+
+bool ft1_recv_init_sha1_info_cb(Tox*, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size, void* user_data) {
+	return static_cast<ToxClient*>(user_data)->onFT1ReceiveInitSHA1Info(group_number, peer_number, file_id, file_id_size, transfer_id, file_size);
+}
+
+void ft1_recv_data_sha1_info_cb(Tox*, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size, void* user_data) {
+	static_cast<ToxClient*>(user_data)->onFT1ReceiveDataSHA1Info(group_number, peer_number, transfer_id, data_offset, data, data_size);
+}
+
+void ft1_send_data_sha1_info_cb(Tox*, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size, void* user_data) {
+	static_cast<ToxClient*>(user_data)->onFT1SendDataSHA1Info(group_number, peer_number, transfer_id, data_offset, data, data_size);
+}
+
+// ==================== sha1_chunk ====================
+
+void ft1_recv_request_sha1_chunk_cb(Tox*, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, void* user_data) {
+	static_cast<ToxClient*>(user_data)->onFT1ReceiveRequestSHA1Chunk(group_number, peer_number, file_id, file_id_size);
+}
+
+bool ft1_recv_init_sha1_chunk_cb(Tox*, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size, void* user_data) {
+	return static_cast<ToxClient*>(user_data)->onFT1ReceiveInitSHA1Chunk(group_number, peer_number, file_id, file_id_size, transfer_id, file_size);
+}
+
+void ft1_recv_data_sha1_chunk_cb(Tox*, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size, void* user_data) {
+	static_cast<ToxClient*>(user_data)->onFT1ReceiveDataSHA1Chunk(group_number, peer_number, transfer_id, data_offset, data, data_size);
+}
+
+void ft1_send_data_sha1_chunk_cb(Tox*, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size, void* user_data) {
+	static_cast<ToxClient*>(user_data)->onFT1SendDataSHA1Chunk(group_number, peer_number, transfer_id, data_offset, data, data_size);
 }
 
