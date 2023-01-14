@@ -10,6 +10,7 @@
 // connectivity:
 // -G <chat_id>
 // -F profile.tox
+// -N <self_name>
 // will print friend id at startup
 // will autoaccept any invite
 // if no -F give, will not save profile.
@@ -41,6 +42,8 @@ struct CommandLine {
 	std::string chat_id;
 	// -F profile.tox
 	std::string profile_path;
+	// -N <self_name>
+	std::string self_name {"tox_ngc_tf1_tool"};
 
 	// transfer variant:
 	// -a id1/sha128_single/sha128_info/sha256_single/sha256_info

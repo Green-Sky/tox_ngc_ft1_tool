@@ -36,6 +36,14 @@ CommandLine::CommandLine(int argc, char** argv) {
 				return;
 			}
 			profile_path = argv[++i];
+		} else if (arg_sv == "-N") {
+			if (i+1 >= argc) {
+				std::cerr << "-N missing <self_name> parameter!\n\n";
+				printHelp();
+				_should_exit = true;
+				return;
+			}
+			self_name = argv[++i];
 		} else if (arg_sv == "-a") {
 		} else if (arg_sv == "-f") {
 			if (i+1 >= argc) {
@@ -61,13 +69,18 @@ CommandLine::CommandLine(int argc, char** argv) {
 				return;
 			}
 			receive_id = argv[++i];
+		} else {
+			std::cerr << "unknown parameter '" << arg_sv << "' !\n\n";
+			printHelp();
+			_should_exit = true;
 		}
 	}
 }
 
 void CommandLine::printHelp(void) {
 	std::cout
-		<< "meta:\n"
+		<< "~~~ HELP ~~~\n"
+		<< " meta:\n"
 		<< " -v version info\n"
 		<< " -V verbose\n"
 		<< " -h help\n"
@@ -75,6 +88,7 @@ void CommandLine::printHelp(void) {
 		<< " connectivity:\n"
 		<< " -G <chat_id>\n"
 		<< " -F profile.tox\n"
+		<< " -N <self_name> (defaults to 'tox_ngc_ft1_tool')\n"
 		<< " will print friend id at startup\n"
 		<< " will autoaccept any invite\n"
 		<< " if no -F give, will not save profile.\n"

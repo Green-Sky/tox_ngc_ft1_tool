@@ -13,6 +13,9 @@ add_executable(tox_ngc_ft1_tool
 	./tox_utils.hpp
 	./tox_utils.cpp
 
+	./tox_callbacks.hpp
+	./tox_callbacks.cpp
+
 	./tox_client.hpp
 	./tox_client.cpp
 )
