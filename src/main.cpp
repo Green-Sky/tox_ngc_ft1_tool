@@ -5,6 +5,8 @@
 #include <memory>
 #include <iostream>
 #include <unordered_map>
+#include <thread>
+#include <chrono>
 
 int main(int argc, char** argv) {
 	CommandLine cl(argc, argv);
@@ -23,6 +25,7 @@ int main(int argc, char** argv) {
 
 	while (true) {
 		client.iterate();
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 
 	return 0;

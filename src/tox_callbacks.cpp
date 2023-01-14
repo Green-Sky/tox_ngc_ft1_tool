@@ -31,3 +31,15 @@ void group_invite_cb(Tox*, uint32_t friend_number, const uint8_t *invite_data, s
 	static_cast<ToxClient*>(user_data)->onToxGroupInvite(friend_number, invite_data, length, std::string_view{reinterpret_cast<const char*>(group_name), group_name_length});
 }
 
+void group_peer_join_cb(Tox*, uint32_t group_number, uint32_t peer_id, void *user_data) {
+	static_cast<ToxClient*>(user_data)->onToxGroupPeerJoin(group_number, peer_id);
+}
+
+void group_peer_exit_cb(Tox*, uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, const uint8_t *name, size_t name_length, const uint8_t *part_message, size_t part_message_length, void *user_data) {
+	static_cast<ToxClient*>(user_data)->onToxGroupPeerExit(group_number, peer_id, exit_type, std::string_view{reinterpret_cast<const char*>(name), name_length}, std::string_view{reinterpret_cast<const char*>(part_message), part_message_length});
+}
+
+void group_self_join_cb(Tox*, uint32_t group_number, void *user_data) {
+	static_cast<ToxClient*>(user_data)->onToxGroupSelfJoin(group_number);
+}
+

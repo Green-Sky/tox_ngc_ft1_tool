@@ -2,7 +2,12 @@
 
 #include "./tox_utils.hpp"
 #include "./tox_callbacks.hpp"
-#include "toxcore/tox.h"
+#include "ngc_ext.h"
+#include "ngc_ft1.h"
+
+#include <sodium.h>
+
+#include <sodium.h>
 
 #include <vector>
 #include <fstream>
@@ -20,7 +25,7 @@ ToxClient::ToxClient(const CommandLine& cl) :
 
 	// use cl for options
 	tox_options_set_log_callback(options, log_cb);
-	tox_options_set_local_discovery_enabled(options, true);
+	tox_options_set_local_discovery_enabled(options, false);
 	tox_options_set_udp_enabled(options, true);
 	tox_options_set_hole_punching_enabled(options, true);
 
@@ -97,11 +102,55 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	}
 	tox_self_set_name(_tox, reinterpret_cast<const uint8_t*>(_self_name.data()), _self_name.size(), nullptr);
 
+	_ext_ctx = NGC_EXT_new();
+
+	NGC_FT1_options ft1_options {};
+	_ft1_ctx = NGC_FT1_new(&ft1_options);
+	NGC_FT1_register_ext(_ft1_ctx, _ext_ctx);
+
+	// dht bootstrap
+	{
+		struct DHT_node {
+			const char *ip;
+			uint16_t port;
+			const char key_hex[TOX_PUBLIC_KEY_SIZE*2 + 1]; // 1 for null terminator
+			unsigned char key_bin[TOX_PUBLIC_KEY_SIZE];
+		};
+
+		DHT_node nodes[] =
+		{
+			// you can change or add your own bs and tcprelays here, ideally closer to you
+			{"tox.plastiras.org",	443,	"8E8B63299B3D520FB377FE5100E65E3322F7AE5B20A0ACED2981769FC5B43725", {}}, // LU tha14
+			{"tox2.plastiras.org",	33445,	"B6626D386BE7E3ACA107B46F48A5C4D522D29281750D44A0CBA6A2721E79C951", {}}, // DE tha14
+
+		};
+
+		for (size_t i = 0; i < sizeof(nodes)/sizeof(DHT_node); i ++) {
+			sodium_hex2bin(
+				nodes[i].key_bin, sizeof(nodes[i].key_bin),
+				nodes[i].key_hex, sizeof(nodes[i].key_hex)-1,
+				NULL, NULL, NULL
+			);
+			tox_bootstrap(_tox, nodes[i].ip, nodes[i].port, nodes[i].key_bin, NULL);
+			// TODO: use extra tcp option to avoid error msgs
+			// ... this is hardcore
+			tox_add_tcp_relay(_tox, nodes[i].ip, nodes[i].port, nodes[i].key_bin, NULL);
+		}
+	}
+
 	_tox_profile_dirty = true;
+}
+
+ToxClient::~ToxClient(void) {
+	NGC_FT1_kill(_ft1_ctx);
+	NGC_EXT_kill(_ext_ctx);
+
+	tox_kill(_tox);
 }
 
 void ToxClient::iterate(void) {
 	tox_iterate(_tox, this);
+	NGC_FT1_iterate(_tox, _ft1_ctx);
 
 	if (_tox_profile_dirty) {
 		saveToxProfile();
@@ -136,15 +185,33 @@ void ToxClient::onToxFriendRequest(const uint8_t* public_key, std::string_view m
 }
 
 void ToxClient::onToxGroupCustomPacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length) {
+	// TODO: signal private?
+	NGC_EXT_handle_group_custom_packet(_tox, _ext_ctx, group_number, peer_id, data, length);
 }
 
 void ToxClient::onToxGroupCustomPrivatePacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length) {
+	NGC_EXT_handle_group_custom_packet(_tox, _ext_ctx, group_number, peer_id, data, length);
 }
 
 void ToxClient::onToxGroupInvite(uint32_t friend_number, const uint8_t* invite_data, size_t invite_length, std::string_view group_name) {
 	std::cout << "TCL accepting group invite (" << group_name << ")\n";
 
 	tox_group_invite_accept(_tox, friend_number, invite_data, invite_length, reinterpret_cast<const uint8_t*>(_self_name.data()), _self_name.size(), nullptr, 0, nullptr);
+	_tox_profile_dirty = true;
+}
+
+void ToxClient::onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id) {
+	std::cout << "TCL group peer join " << group_number << ":" << peer_id << "\n";
+	_tox_profile_dirty = true;
+}
+
+void ToxClient::onToxGroupPeerExit(uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, std::string_view name, std::string_view part_message) {
+	std::cout << "TCL group peer esit " << group_number << ":" << peer_id << "\n";
+	_tox_profile_dirty = true;
+}
+
+void ToxClient::onToxGroupSelfJoin(uint32_t group_number) {
+	std::cout << "TCL group self join " << group_number << "\n";
 	_tox_profile_dirty = true;
 }
 

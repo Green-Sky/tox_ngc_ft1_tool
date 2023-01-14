@@ -32,9 +32,9 @@ void friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t *messa
 void group_custom_packet_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length, void *user_data);
 void group_custom_private_packet_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length, void *user_data);
 void group_invite_cb(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length, const uint8_t *group_name, size_t group_name_length, void *user_data);
-//static void group_peer_join_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, void *user_data);
-//static void group_peer_exit_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, const uint8_t *name, size_t name_length, const uint8_t *part_message, size_t length, void *user_data);
-//static void group_self_join_cb(Tox *tox, uint32_t group_number, void *user_data);
+void group_peer_join_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, void *user_data);
+void group_peer_exit_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, const uint8_t *name, size_t name_length, const uint8_t *part_message, size_t length, void *user_data);
+void group_self_join_cb(Tox *tox, uint32_t group_number, void *user_data);
 //static void group_join_fail_cb(Tox *tox, uint32_t group_number, Tox_Group_Join_Fail fail_type, void *user_data);
 //static void group_moderation_cb(Tox *tox, uint32_t group_number, uint32_t source_peer_id, uint32_t target_peer_id, Tox_Group_Mod_Event mod_type, void *user_data);
 

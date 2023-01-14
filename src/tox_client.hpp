@@ -12,6 +12,7 @@
 struct ToxClient {
 	public:
 		ToxClient(const CommandLine& cl);
+		~ToxClient(void);
 
 		void iterate(void);
 
@@ -25,7 +26,9 @@ struct ToxClient {
 		void onToxGroupCustomPacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length);
 		void onToxGroupCustomPrivatePacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length);
 		void onToxGroupInvite(uint32_t friend_number, const uint8_t* invite_data, size_t invite_length, std::string_view group_name);
-
+		void onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id);
+		void onToxGroupPeerExit(uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, std::string_view name, std::string_view part_message);
+		void onToxGroupSelfJoin(uint32_t group_number);
 
 	private:
 		void saveToxProfile(void);
