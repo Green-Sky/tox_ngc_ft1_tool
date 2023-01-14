@@ -11,6 +11,8 @@ CommandLine::CommandLine(int argc, char** argv) {
 	for (int i = 1; i < argc; i++) {
 		std::string_view arg_sv{argv[i]};
 
+#define PRINT_HELP_AND_BAIL printHelp(); _should_exit = true; return;
+
 		if (arg_sv == "-v") {
 			version = true;
 			_should_exit = true;
@@ -22,58 +24,67 @@ CommandLine::CommandLine(int argc, char** argv) {
 			_should_exit = true;
 		} else if (arg_sv == "-G") {
 			if (i+1 >= argc) {
-				std::cerr << "-G missing <chat_id> parameter!\n\n";
-				printHelp();
-				_should_exit = true;
-				return;
+				std::cerr << "ERROR: -G missing <chat_id> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
 			}
 			chat_id = argv[++i];
 		} else if (arg_sv == "-F") {
 			if (i+1 >= argc) {
-				std::cerr << "-F missing <path> parameter!\n\n";
-				printHelp();
-				_should_exit = true;
-				return;
+				std::cerr << "ERROR: -F missing <path> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
 			}
 			profile_path = argv[++i];
 		} else if (arg_sv == "-N") {
 			if (i+1 >= argc) {
-				std::cerr << "-N missing <self_name> parameter!\n\n";
-				printHelp();
-				_should_exit = true;
-				return;
+				std::cerr << "ERROR: -N missing <self_name> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
 			}
 			self_name = argv[++i];
 		} else if (arg_sv == "-a") {
+			if (i+1 >= argc) {
+				std::cerr << "ERROR: -a missing <transfer_variant> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
+			}
+			std::string_view tv_sv{argv[++i]};
+
+			if (tv_sv == "id1") {
+				transfer_variant = TransferE::ID;
+			} else if (tv_sv == "sha1_single") {
+				transfer_variant = TransferE::SHA1_SINGLE;
+			} else if (tv_sv == "sha1_info") {
+				transfer_variant = TransferE::SHA1_INFO;
+			} else {
+				std::cerr << "ERROR: invalid <transfer_variant> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
+			}
+
 		} else if (arg_sv == "-f") {
 			if (i+1 >= argc) {
-				std::cerr << "-f missing <path> parameter!\n\n";
-				printHelp();
-				_should_exit = true;
-				return;
+				std::cerr << "ERROR: -f missing <path> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
 			}
 			send_path = argv[++i];
 		} else if (arg_sv == "-d") {
 			if (i+1 >= argc) {
-				std::cerr << "-d missing <path> parameter!\n\n";
-				printHelp();
-				_should_exit = true;
-				return;
+				std::cerr << "ERROR: -d missing <path> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
 			}
 			receive_dump_dir = argv[++i];
 		} else if (arg_sv == "-D") {
 			if (i+1 >= argc) {
-				std::cerr << "-D missing <id/hash> parameter!\n\n";
-				printHelp();
-				_should_exit = true;
-				return;
+				std::cerr << "ERROR: -D missing <id/hash> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
 			}
 			receive_id = argv[++i];
 		} else {
-			std::cerr << "unknown parameter '" << arg_sv << "' !\n\n";
-			printHelp();
-			_should_exit = true;
+			std::cerr << "ERROR: unknown parameter '" << arg_sv << "' !\n\n";
+			PRINT_HELP_AND_BAIL;
 		}
+	}
+
+	if (transfer_variant == TransferE::INVALID) {
+		std::cerr << "ERROR: transfer_variant not set!\n\n";
+		PRINT_HELP_AND_BAIL;
 	}
 }
 
@@ -95,7 +106,7 @@ void CommandLine::printHelp(void) {
 		<< " if profile exists load, otherwise create new\n"
 		<< "\n"
 		<< " transfer variant:\n"
-		<< " -a id1/sha128_single/sha128_info/sha256_single/sha256_info\n"
+		<< " -a id1/sha1_single/sha1_info/sha2_single/sha2_info\n"
 		<< "\n"
 		<< " send:\n"
 		<< " -f send_this_file.zip\n"

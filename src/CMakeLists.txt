@@ -18,6 +18,11 @@ add_executable(tox_ngc_ft1_tool
 
 	./tox_client.hpp
 	./tox_client.cpp
+
+	./state.hpp
+
+	./send_states/sha1_start.hpp
+	./send_states/sha1_start.cpp
 )
 
 target_compile_features(tox_ngc_ft1_tool PUBLIC cxx_std_17)

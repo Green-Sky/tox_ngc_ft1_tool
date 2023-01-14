@@ -23,8 +23,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "tox id: " << client.getOwnAddress() << "\n";
 
-	while (true) {
-		client.iterate();
+	while (client.iterate()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 

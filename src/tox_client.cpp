@@ -2,11 +2,9 @@
 
 #include "./tox_utils.hpp"
 #include "./tox_callbacks.hpp"
-#include "ngc_ext.h"
-#include "ngc_ft1.h"
+#include "send_states/sha1_start.hpp"
 
-#include <sodium.h>
-
+#include <memory>
 #include <sodium.h>
 
 #include <vector>
@@ -123,6 +121,14 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	NGC_FT1_register_callback_recv_data(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_CHUNK, ft1_recv_data_sha1_chunk_cb, this);
 	NGC_FT1_register_callback_send_data(_ft1_ctx, NGC_FT1_file_kind::HASH_SHA1_CHUNK, ft1_send_data_sha1_chunk_cb, this);
 
+	{ // state factory // TODO: extract
+		// sender
+		if (!cl.send_path.empty()) {
+			_state = std::make_unique<SendStates::SHA1Start>(*this, cl);
+		} else { // receiver
+		}
+	}
+
 	// dht bootstrap
 	{
 		struct DHT_node {
@@ -163,13 +169,24 @@ ToxClient::~ToxClient(void) {
 	tox_kill(_tox);
 }
 
-void ToxClient::iterate(void) {
+bool ToxClient::iterate(void) {
 	tox_iterate(_tox, this);
 	NGC_FT1_iterate(_tox, _ft1_ctx);
+
+	if (_state->iterate()) {
+		_state = _state->nextState();
+
+		if (!_state) {
+			// exit program
+			return false;
+		}
+	}
 
 	if (_tox_profile_dirty) {
 		saveToxProfile();
 	}
+
+	return true;
 }
 
 std::string ToxClient::getOwnAddress(void) const {
@@ -230,6 +247,13 @@ void ToxClient::onToxGroupSelfJoin(uint32_t group_number) {
 	_tox_profile_dirty = true;
 }
 
+
+StateI& ToxClient::getState(void) {
+	assert(_state.get());
+	return *_state.get();
+}
+
+#if 0
 // sha1_info
 void ToxClient::onFT1ReceiveRequestSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size) {
 }
@@ -257,6 +281,7 @@ void ToxClient::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_n
 
 void ToxClient::onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
 }
+#endif
 
 void ToxClient::saveToxProfile(void) {
 	if (_tox_profile_path.empty()) {

@@ -17,7 +17,7 @@
 // if profile exists load, otherwise create new
 //
 // transfer variant:
-// -a id1/sha128_single/sha128_info/sha256_single/sha256_info
+// -a id1/sha1_single/sha1_info/sha2_single/sha2_info
 //
 // send:
 // -f send_this_file.zip
@@ -25,6 +25,15 @@
 // receive:
 // -d dump/everything/in/this/dir
 // -D <id/hash> (what to dl)
+
+enum class TransferE {
+	INVALID,
+
+	ID,
+	SHA1_SINGLE, // a single chunk (no filename is transfered)
+	SHA1_INFO,
+	//...
+};
 
 struct CommandLine {
 	std::string exe;
@@ -46,8 +55,8 @@ struct CommandLine {
 	std::string self_name {"tox_ngc_tf1_tool"};
 
 	// transfer variant:
-	// -a id1/sha128_single/sha128_info/sha256_single/sha256_info
-	// some enum?
+	// -a id1/sha1_single/sha1_info/sha2_single/sha2_info
+	TransferE transfer_variant {TransferE::INVALID};
 
 	// send:
 	// -f send_this_file.zip
