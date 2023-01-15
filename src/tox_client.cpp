@@ -3,7 +3,7 @@
 #include "./tox_utils.hpp"
 #include "./tox_callbacks.hpp"
 
-#include "./states/state_send_start_sha1.hpp"
+#include "./states/send_start_sha1.hpp"
 
 #include <memory>
 #include <sodium.h>

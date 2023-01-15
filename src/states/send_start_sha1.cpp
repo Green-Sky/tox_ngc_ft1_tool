@@ -1,10 +1,13 @@
-#include "./state_send_start_sha1.hpp"
+#include "./send_start_sha1.hpp"
 
 #include "../tox_client.hpp"
 #include "../tox_utils.hpp"
 #include "../hash_utils.hpp"
 #include "../ft_sha1_info.hpp"
 
+#include "./sha1.hpp"
+
+#include <memory>
 #include <mio/mio.hpp>
 
 #include <iostream>
@@ -41,24 +44,31 @@ SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl
 		_file_map = mio::make_mmap_source(cl.send_path, 0, mio::map_entire_file, err);
 	}
 
-	std::cout << "SHA1Start chunks: " << _sha1_info.chunks.size() << "\n";
+	std::cout << "SendStartSHA1 chunks: " << _sha1_info.chunks.size() << "\n";
 
 	_sha1_info_data = _sha1_info.toBuffer();
 
-	std::cout << "SHA1Start sha1_info size: " << _sha1_info_data.size() << "\n";
+	std::cout << "SendStartSHA1 sha1_info size: " << _sha1_info_data.size() << "\n";
 
 	_sha1_info_hash = hash_sha1(_sha1_info_data.data(), _sha1_info_data.size());
 
-	std::cout << "SHA1Start sha1_info_hash: " << bin2hex(_sha1_info_hash) << "\n";
+	std::cout << "SendStartSHA1 sha1_info_hash: " << bin2hex(_sha1_info_hash) << "\n";
 }
 
 bool SendStartSHA1::iterate(void) {
-	(void)_tcl._tox;
-	return false;
+	return true; // TODO: change hashing to async
 }
 
 std::unique_ptr<StateI> SendStartSHA1::nextState(void) {
-	return nullptr;
+	std::cout << "SendStartSHA1 switching state to SHA1\n";
+	// we are done setting up
+	return std::make_unique<SHA1>(
+		_tcl,
+		std::move(_file_map),
+		std::move(_sha1_info),
+		std::move(_sha1_info_data),
+		std::move(_sha1_info_hash)
+	);
 }
 
 // sha1_info
