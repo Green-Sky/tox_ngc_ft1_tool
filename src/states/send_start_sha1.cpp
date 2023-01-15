@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <vector>
 
 namespace States {
 
@@ -61,13 +62,15 @@ bool SendStartSHA1::iterate(void) {
 
 std::unique_ptr<StateI> SendStartSHA1::nextState(void) {
 	std::cout << "SendStartSHA1 switching state to SHA1\n";
+	std::vector<bool> have_chunk(_sha1_info.chunks.size(), true);
 	// we are done setting up
 	return std::make_unique<SHA1>(
 		_tcl,
 		std::move(_file_map),
 		std::move(_sha1_info),
 		std::move(_sha1_info_data),
-		std::move(_sha1_info_hash)
+		std::move(_sha1_info_hash),
+		std::move(have_chunk)
 	);
 }
 

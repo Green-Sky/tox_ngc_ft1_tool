@@ -5,6 +5,7 @@
 #include "../ft_sha1_info.hpp"
 
 #include <mio/mio.hpp>
+#include <unordered_map>
 
 namespace States {
 
@@ -17,7 +18,8 @@ struct SHA1 final : public StateI {
 			mio::mmap_source&& file_map,
 			const FTInfoSHA1&& sha1_info,
 			const std::vector<uint8_t>&& sha1_info_data,
-			const std::vector<uint8_t>&& sha1_info_hash
+			const std::vector<uint8_t>&& sha1_info_hash,
+			std::vector<bool>&& have_chunk = {}
 		);
 		~SHA1(void) override = default;
 
@@ -41,7 +43,11 @@ struct SHA1 final : public StateI {
 		mio::mmap_source _file_map;
 		const FTInfoSHA1 _sha1_info;
 		const std::vector<uint8_t> _sha1_info_data;
-		const std::vector<uint8_t> _sha1_info_hash;
+		const SHA1Digest _sha1_info_hash;
+
+		// index is the same as for info
+		std::vector<bool> _have_chunk;
+		bool _have_all {false};
 };
 
 } // States

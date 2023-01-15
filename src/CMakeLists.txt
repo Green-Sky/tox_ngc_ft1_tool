@@ -16,6 +16,9 @@ add_executable(tox_ngc_ft1_tool
 	./hash_utils.hpp
 	./hash_utils.cpp
 
+	./ft_sha1_info.hpp
+	./ft_sha1_info.cpp
+
 	./tox_callbacks.hpp
 	./tox_callbacks.cpp
 
