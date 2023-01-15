@@ -10,8 +10,8 @@
 struct SHA1Digest {
 	std::array<uint8_t, 20> data;
 
+	SHA1Digest(void) = default;
 	SHA1Digest(const std::vector<uint8_t>& v);
-
 	SHA1Digest(const uint8_t* d, size_t s);
 
 	bool operator==(const SHA1Digest& other) const { return data == other.data; }

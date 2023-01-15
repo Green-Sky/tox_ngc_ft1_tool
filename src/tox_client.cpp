@@ -4,6 +4,7 @@
 #include "./tox_callbacks.hpp"
 
 #include "./states/send_start_sha1.hpp"
+#include "./states/receive_start_sha1.hpp"
 
 #include <memory>
 #include <sodium.h>
@@ -127,6 +128,7 @@ ToxClient::ToxClient(const CommandLine& cl) :
 		if (!cl.send_path.empty()) {
 			_state = std::make_unique<States::SendStartSHA1>(*this, cl);
 		} else { // receiver
+			_state = std::make_unique<States::ReceiveStartSHA1>(*this, cl);
 		}
 	}
 

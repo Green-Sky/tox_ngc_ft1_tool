@@ -30,6 +30,9 @@ add_executable(tox_ngc_ft1_tool
 	./states/send_start_sha1.hpp
 	./states/send_start_sha1.cpp
 
+	./states/receive_start_sha1.hpp
+	./states/receive_start_sha1.cpp
+
 	./states/sha1.hpp
 	./states/sha1.cpp
 )

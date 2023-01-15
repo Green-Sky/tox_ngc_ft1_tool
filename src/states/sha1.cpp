@@ -11,7 +11,8 @@ SHA1::SHA1(
 	mio::mmap_source&& file_map,
 	const FTInfoSHA1&& sha1_info,
 	const std::vector<uint8_t>&& sha1_info_data,
-	const std::vector<uint8_t>&& sha1_info_hash,
+	//const std::vector<uint8_t>&& sha1_info_hash,
+	const SHA1Digest&& sha1_info_hash,
 	std::vector<bool>&& have_chunk
 ) :
 	StateI(tcl),
