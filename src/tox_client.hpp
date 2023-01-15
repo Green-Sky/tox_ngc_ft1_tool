@@ -13,8 +13,8 @@
 #include <string_view>
 
 // fwd
-namespace SendStates {
-	struct SHA1Start;
+namespace States {
+	struct SendStartSHA1;
 }
 
 struct ToxClient {
@@ -71,6 +71,6 @@ struct ToxClient {
 		std::unique_ptr<StateI> _state;
 
 		// TODO: this is a hack, make better?
-		friend SendStates::SHA1Start;
+		friend States::SendStartSHA1;
 };
 

@@ -13,6 +13,9 @@ add_executable(tox_ngc_ft1_tool
 	./tox_utils.hpp
 	./tox_utils.cpp
 
+	./hash_utils.hpp
+	./hash_utils.cpp
+
 	./tox_callbacks.hpp
 	./tox_callbacks.cpp
 
@@ -21,8 +24,8 @@ add_executable(tox_ngc_ft1_tool
 
 	./state.hpp
 
-	./send_states/sha1_start.hpp
-	./send_states/sha1_start.cpp
+	./states/state_send_start_sha1.hpp
+	./states/state_send_start_sha1.cpp
 )
 
 target_compile_features(tox_ngc_ft1_tool PUBLIC cxx_std_17)
@@ -31,5 +34,8 @@ target_link_libraries(tox_ngc_ft1_tool
 	toxcore
 	tox_ngc_ext
 	tox_ngc_ft1
+
+	mio::mio
+	sha1::sha1
 )
 
