@@ -5,6 +5,7 @@
 
 #include "./states/send_start_sha1.hpp"
 #include "./states/receive_start_sha1.hpp"
+#include "ngc_ft1.h"
 
 #include <memory>
 #include <sodium.h>
@@ -255,6 +256,18 @@ void ToxClient::onToxGroupSelfJoin(uint32_t group_number) {
 StateI& ToxClient::getState(void) {
 	assert(_state.get());
 	return *_state.get();
+}
+
+bool ToxClient::sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size) {
+	NGC_FT1_send_request_private(
+		_tox, _ft1_ctx,
+		group_number, peer_number,
+		file_kind,
+		file_id, file_id_size
+	);
+
+	// TODO: return value
+	return true;
 }
 
 bool ToxClient::sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id) {

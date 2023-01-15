@@ -5,11 +5,14 @@
 #include "../tox_utils.hpp"
 #include "../ft_sha1_info.hpp"
 
+#include "../tox_client.hpp"
+
 #include <mio/mio.hpp>
 
 #include <iostream>
 #include <exception>
 #include <memory>
+#include <tuple>
 
 namespace States {
 
@@ -25,8 +28,28 @@ ReceiveStartSHA1::ReceiveStartSHA1(ToxClient& tcl, const CommandLine& cl) : Stat
 }
 
 bool ReceiveStartSHA1::iterate(float delta) {
+	_time_since_last_request += delta;
+
+	// iterate and timeout
+	if (_transfer.has_value()) {
+		float& time_since_remote_activity = std::get<float>(_transfer.value());
+		time_since_remote_activity += delta;
+
+		// timout if not heard after 10s
+		if (time_since_remote_activity >= 10.f) {
+			std::cerr << "ReceiveStartSHA1 info tansfer timed out " << std::get<0>(*_transfer) << ":" << std::get<1>(*_transfer) << "." << std::get<2>(*_transfer) << "\n";
+
+			_transfer.reset();
+		}
+	} else if (_time_since_last_request >= 15.f) { // blast ever 15sec
+		_time_since_last_request = 0.f;
+		//_tcl.sendFT1RequestPrivate(
+
+	}
+
+	// if not transfer, request from random peer (equal dist!!)
 	// TODO: return true if done
-	return false;
+	return _done;
 }
 
 std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
@@ -51,18 +74,52 @@ std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
 }
 
 // sha1_info
-void ReceiveStartSHA1::onFT1ReceiveRequestSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size) {
+void ReceiveStartSHA1::onFT1ReceiveRequestSHA1Info(uint32_t, uint32_t, const uint8_t*, size_t) {
+	// shrug, we dont have it either
 }
 
 bool ReceiveStartSHA1::onFT1ReceiveInitSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size) {
+	if (file_id_size != _sha1_info_hash.size()) {
+		std::cerr << "ReceiveStartSHA1 got request for sha1_info of wrong size!!\n";
+		return false;
+	}
+
+	SHA1Digest requested_hash(file_id, file_id_size);
+
+	if (requested_hash != _sha1_info_hash) {
+		std::cout << "ReceiveStartSHA1 ignoring different info request " << requested_hash << "\n";
+		return false;
+	}
+
+	if (_transfer.has_value()) {
+		// TODO: log?
+		return false; // allready in progress
+	}
+
+	_sha1_info_data.resize(file_size);
+
+	_transfer = std::make_tuple(group_number, peer_number, transfer_id, 0.f);
+	std::cout << "ReceiveStartSHA1 accepted info transfer" << group_number << ":" << peer_number << "." << transfer_id << "\n";
+
 	// accept
 	return true;
 }
 
 void ReceiveStartSHA1::onFT1ReceiveDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size) {
+	// TODO: test if not current transfer
+
+	for (size_t i = 0; i < data_size; i++) {
+		_sha1_info_data[data_offset+i] = data[i];
+	}
+
+	if (data_offset + data_size == _sha1_info_data.size()) {
+		std::cout << "ReceiveStartSHA1 info tansfer finished " << group_number << ":" << peer_number << "." << transfer_id << "\n";
+		_done = true;
+	}
 }
 
-void ReceiveStartSHA1::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
+void ReceiveStartSHA1::onFT1SendDataSHA1Info(uint32_t, uint32_t, uint8_t, size_t, uint8_t*, size_t) {
+	// we cant send what we dont have
 }
 
 // sha1_chunk

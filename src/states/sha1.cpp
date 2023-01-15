@@ -97,7 +97,8 @@ void SHA1::onFT1ReceiveRequestSHA1Info(uint32_t group_number, uint32_t peer_numb
 	SHA1Digest requested_hash(file_id, file_id_size);
 
 	if (requested_hash != _sha1_info_hash) {
-		std::cout << "SHA1 ignoring diffenrent info request " << requested_hash << "\n";
+		std::cout << "SHA1 ignoring different info request " << requested_hash << "\n";
+		return;
 	}
 
 	// same hash, should respond

@@ -6,6 +6,7 @@
 #include "../ft_sha1_info.hpp"
 
 #include <vector>
+#include <optional>
 
 namespace States {
 
@@ -35,6 +36,13 @@ struct ReceiveStartSHA1 final : public StateI {
 		//FTInfoSHA1 _sha1_info;
 		std::vector<uint8_t> _sha1_info_data;
 		SHA1Digest _sha1_info_hash; // treat as const
+
+		// group_number, peer_number, transfer_id, time_since_remote_activity
+		std::optional<std::tuple<uint32_t, uint32_t, uint8_t, float>> _transfer;
+
+		bool _done {false};
+
+		float _time_since_last_request {5.f};
 };
 
 } // States

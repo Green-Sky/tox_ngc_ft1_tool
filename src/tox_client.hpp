@@ -43,6 +43,7 @@ struct ToxClient {
 		StateI& getState(void); // public accessor for callbacks
 
 	public: // FT1 sends
+		bool sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size);
 		bool sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id);
 
 	private:
@@ -59,8 +60,5 @@ struct ToxClient {
 		bool _tox_profile_dirty {false}; // set in callbacks
 
 		std::unique_ptr<StateI> _state;
-
-		// TODO: this is a hack, make better?
-		friend States::SendStartSHA1;
 };
 
