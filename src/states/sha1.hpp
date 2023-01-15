@@ -17,7 +17,7 @@ struct SHA1 final : public StateI {
 	public: // general interface
 		SHA1(
 			ToxClient& tcl,
-			mio::mmap_source&& file_map,
+			mio::mmap_sink&& file_map,
 			const FTInfoSHA1&& sha1_info,
 			const std::vector<uint8_t>&& sha1_info_data,
 			//const std::vector<uint8_t>&& sha1_info_hash,
@@ -48,7 +48,7 @@ struct SHA1 final : public StateI {
 		void queueUpRequestInfo(uint32_t group_number, uint32_t peer_number);
 
 	private:
-		mio::mmap_source _file_map;
+		mio::mmap_sink _file_map; // writable if not all
 		const FTInfoSHA1 _sha1_info;
 		const std::vector<uint8_t> _sha1_info_data;
 		const SHA1Digest _sha1_info_hash;

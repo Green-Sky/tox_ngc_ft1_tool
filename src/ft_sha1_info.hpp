@@ -29,5 +29,8 @@ struct FTInfoSHA1 {
 	std::vector<SHA1Digest> chunks;
 
 	std::vector<uint8_t> toBuffer(void) const;
+	void fromBuffer(const std::vector<uint8_t>& buffer);
 };
+
+std::ostream& operator<<(std::ostream& out, const FTInfoSHA1& v);
 

@@ -66,3 +66,48 @@ std::vector<uint8_t> FTInfoSHA1::toBuffer(void) const {
 	return buffer;
 }
 
+void FTInfoSHA1::fromBuffer(const std::vector<uint8_t>& buffer) {
+	assert(buffer.size() >= 256+8);
+
+	// TODO: optimize
+	file_name.clear();
+	for (size_t i = 0; i < 256; i++) {
+		char next_char = static_cast<char>(buffer[i]);
+		if (next_char == 0) {
+			break;
+		}
+		file_name.push_back(next_char);
+	}
+
+	{ // HACK: endianess
+		file_size = 0;
+		file_size |= uint64_t(buffer[256+0]) << (0*8);
+		file_size |= uint64_t(buffer[256+1]) << (1*8);
+		file_size |= uint64_t(buffer[256+2]) << (2*8);
+		file_size |= uint64_t(buffer[256+3]) << (3*8);
+		file_size |= uint64_t(buffer[256+4]) << (4*8);
+		file_size |= uint64_t(buffer[256+5]) << (5*8);
+		file_size |= uint64_t(buffer[256+6]) << (6*8);
+		file_size |= uint64_t(buffer[256+7]) << (7*8);
+	}
+
+	assert((buffer.size()-(256+8)) % 20 == 0);
+
+	for (size_t offset = 256+8; offset < buffer.size();) {
+		assert(buffer.size() >= offset + 20);
+
+		auto& chunk = chunks.emplace_back();
+		for (size_t i = 0; i < chunk.size(); i++, offset++) {
+			chunk.data[i] = buffer.at(offset);
+		}
+		// TODO: error/leftover checking
+	}
+}
+
+std::ostream& operator<<(std::ostream& out, const FTInfoSHA1& v) {
+	out << "  file_name: " << v.file_name << "\n";
+	out << "  file_size: " << v.file_size << "\n";
+	out << "  chunks.size(): " << v.chunks.size() << "\n";
+	return out;
+}
+

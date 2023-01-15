@@ -233,22 +233,26 @@ void ToxClient::onToxGroupCustomPrivatePacket(uint32_t group_number, uint32_t pe
 void ToxClient::onToxGroupInvite(uint32_t friend_number, const uint8_t* invite_data, size_t invite_length, std::string_view group_name) {
 	std::cout << "TCL accepting group invite (" << group_name << ")\n";
 
-	tox_group_invite_accept(_tox, friend_number, invite_data, invite_length, reinterpret_cast<const uint8_t*>(_self_name.data()), _self_name.size(), nullptr, 0, nullptr);
+	uint32_t new_group_number = tox_group_invite_accept(_tox, friend_number, invite_data, invite_length, reinterpret_cast<const uint8_t*>(_self_name.data()), _self_name.size(), nullptr, 0, nullptr);
+	_groups[new_group_number] = {};
 	_tox_profile_dirty = true;
 }
 
 void ToxClient::onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id) {
 	std::cout << "TCL group peer join " << group_number << ":" << peer_id << "\n";
+	_groups[group_number].emplace(peer_id);
 	_tox_profile_dirty = true;
 }
 
 void ToxClient::onToxGroupPeerExit(uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, std::string_view name, std::string_view part_message) {
-	std::cout << "TCL group peer esit " << group_number << ":" << peer_id << "\n";
+	std::cout << "TCL group peer exit " << group_number << ":" << peer_id << "\n";
+	_groups[group_number].erase(peer_id);
 	_tox_profile_dirty = true;
 }
 
 void ToxClient::onToxGroupSelfJoin(uint32_t group_number) {
 	std::cout << "TCL group self join " << group_number << "\n";
+	// ???
 	_tox_profile_dirty = true;
 }
 

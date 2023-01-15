@@ -8,7 +8,7 @@ namespace States {
 
 SHA1::SHA1(
 	ToxClient& tcl,
-	mio::mmap_source&& file_map,
+	mio::mmap_sink&& file_map,
 	const FTInfoSHA1&& sha1_info,
 	const std::vector<uint8_t>&& sha1_info_data,
 	//const std::vector<uint8_t>&& sha1_info_hash,
@@ -126,6 +126,14 @@ void SHA1::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, ui
 
 	for (size_t i = 0; i < data_size; i++) {
 		data[i] = _sha1_info_data.at(data_offset+i);
+	}
+
+	// TODO: sub optimal
+	for (auto it = _transfers_requested_info.begin(); it != _transfers_requested_info.end(); it++) {
+		if (std::get<0>(*it) == group_number && std::get<1>(*it) == peer_number && std::get<2>(*it) == transfer_id) {
+			std::get<float>(*it) = 0.f;
+			break;
+		}
 	}
 
 	// if last data block

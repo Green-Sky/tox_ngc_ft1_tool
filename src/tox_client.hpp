@@ -11,6 +11,8 @@
 
 #include <string>
 #include <string_view>
+#include <map>
+#include <set>
 
 // fwd
 namespace States {
@@ -28,6 +30,22 @@ struct ToxClient {
 		void setToxProfilePath(const std::string& new_path) { _tox_profile_path = new_path; }
 
 		std::string getOwnAddress(void) const;
+
+		template<typename FN>
+		void forEachGroup(FN&& fn) const {
+			for (const auto& it : _groups) {
+				fn(it.first);
+			}
+		}
+
+		template<typename FN>
+		void forEachGroupPeer(uint32_t group_number, FN&& fn) const {
+			if (_groups.count(group_number)) {
+				for (const uint32_t peer_number : _groups.at(group_number)) {
+					fn(peer_number);
+				}
+			}
+		}
 
 	public: // tox callbacks
 		void onToxSelfConnectionStatus(TOX_CONNECTION connection_status);
@@ -60,5 +78,8 @@ struct ToxClient {
 		bool _tox_profile_dirty {false}; // set in callbacks
 
 		std::unique_ptr<StateI> _state;
+
+		// key groupid, value set of peer ids
+		std::map<uint32_t, std::set<uint32_t>> _groups;
 };
 

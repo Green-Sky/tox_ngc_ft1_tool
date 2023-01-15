@@ -2,16 +2,20 @@
 
 #include "./sha1.hpp"
 
+#include "../hash_utils.hpp"
 #include "../tox_utils.hpp"
 #include "../ft_sha1_info.hpp"
 
 #include "../tox_client.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <mio/mio.hpp>
 
 #include <iostream>
 #include <exception>
 #include <memory>
+#include <system_error>
 #include <tuple>
 
 namespace States {
@@ -43,8 +47,18 @@ bool ReceiveStartSHA1::iterate(float delta) {
 		}
 	} else if (_time_since_last_request >= 15.f) { // blast ever 15sec
 		_time_since_last_request = 0.f;
-		//_tcl.sendFT1RequestPrivate(
-
+		// TODO: select random and try, not blas
+		// ... and we are blasing
+		_tcl.forEachGroup([this](const uint32_t group_number) {
+			_tcl.forEachGroupPeer(group_number, [this, group_number](uint32_t peer_number) {
+				_tcl.sendFT1RequestPrivate(
+					group_number, peer_number,
+					NGC_FT1_file_kind::HASH_SHA1_INFO,
+					_sha1_info_hash.data.data(), _sha1_info_hash.size()
+				);
+				std::cout << "ReceiveStartSHA1 sendig info request to " << group_number << ":" << peer_number << "\n";
+			});
+		});
 	}
 
 	// if not transfer, request from random peer (equal dist!!)
@@ -53,16 +67,41 @@ bool ReceiveStartSHA1::iterate(float delta) {
 }
 
 std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
-	std::cout << "ReceiveStartSHA1 switching state to SHA1\n";
-
 	FTInfoSHA1 sha1_info;
-	// from buffer
+	sha1_info.fromBuffer(_sha1_info_data);
+
+	std::cout << "ReceiveStartSHA1 info is: \n" << sha1_info;
+
+	bool file_existed = std::filesystem::exists(sha1_info.file_name);
+	if (!file_existed) {
+		std::ofstream(sha1_info.file_name) << '\0'; // create the file
+	}
+	std::filesystem::resize_file(sha1_info.file_name, sha1_info.file_size);
 
 	// open file for writing (pre allocate?)
-	mio::mmap_sink file_map;
+	std::error_code err;
+	mio::mmap_sink file_map = mio::make_mmap_sink(sha1_info.file_name, 0, sha1_info.file_size, err);
 
 	std::vector<bool> have_chunk(sha1_info.chunks.size(), false);
 
+	// dont overwrite correct existing data
+	if (file_existed) {
+		std::cout << "ReceiveStartSHA1 checking existing file\n";
+		size_t f_i = 0;
+		for (size_t c_i = 0; f_i + FTInfoSHA1::chunk_size < file_map.length(); f_i += FTInfoSHA1::chunk_size, c_i++) {
+			if (sha1_info.chunks[c_i] == hash_sha1(file_map.data()+f_i, FTInfoSHA1::chunk_size)) {
+				have_chunk[c_i] = true;
+			}
+		}
+
+		if (f_i < file_map.length()) {
+			if (sha1_info.chunks.back() == hash_sha1(file_map.data()+f_i, file_map.length()-f_i)) {
+				have_chunk.back() = true;
+			}
+		}
+	}
+
+	std::cout << "ReceiveStartSHA1 switching state to SHA1\n";
 	return std::make_unique<SHA1>(
 		_tcl,
 		std::move(file_map),
@@ -112,7 +151,19 @@ void ReceiveStartSHA1::onFT1ReceiveDataSHA1Info(uint32_t group_number, uint32_t 
 		_sha1_info_data[data_offset+i] = data[i];
 	}
 
+	std::get<float>(_transfer.value()) = 0.f;
+
+	std::cout << "ReceiveStartSHA1 " << data_offset+data_size << "/" << _sha1_info_data.size() << " (" << float(data_offset+data_size) / _sha1_info_data.size() * 100.f << "%)\n";
+
 	if (data_offset + data_size == _sha1_info_data.size()) {
+		// hash and verify
+		SHA1Digest test_hash = hash_sha1(_sha1_info_data.data(), _sha1_info_data.size());
+		if (test_hash != _sha1_info_hash) {
+			std::cerr << "ReceiveStartSHA1 received info's hash does not match!, discarding\n";
+			_transfer.reset();
+			_sha1_info_data.clear();
+		}
+
 		std::cout << "ReceiveStartSHA1 info tansfer finished " << group_number << ":" << peer_number << "." << transfer_id << "\n";
 		_done = true;
 	}

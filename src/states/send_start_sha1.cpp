@@ -13,10 +13,11 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
+#include <filesystem>
 
 namespace States {
 
-SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl) {
+SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl), _file_path(cl.send_path) {
 	std::cout << "SendStartSHA1 start building sha1_info\n";
 	std::error_code err;
 	_file_map = mio::make_mmap_source(cl.send_path, 0, mio::map_entire_file, err);
@@ -26,7 +27,7 @@ SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl
 	assert(!_file_map.empty());
 
 	// build info
-	_sha1_info.file_name = "testfile.bin";
+	_sha1_info.file_name = std::filesystem::path(cl.send_path).filename();
 	_sha1_info.file_size = _file_map.length();
 
 	{ // build chunks
@@ -45,7 +46,7 @@ SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl
 		_file_map = mio::make_mmap_source(cl.send_path, 0, mio::map_entire_file, err);
 	}
 
-	std::cout << "SendStartSHA1 chunks: " << _sha1_info.chunks.size() << "\n";
+	std::cout << "SendStartSHA1 info is: \n" << _sha1_info;
 
 	_sha1_info_data = _sha1_info.toBuffer();
 
@@ -63,10 +64,15 @@ bool SendStartSHA1::iterate(float) {
 std::unique_ptr<StateI> SendStartSHA1::nextState(void) {
 	std::cout << "SendStartSHA1 switching state to SHA1\n";
 	std::vector<bool> have_chunk(_sha1_info.chunks.size(), true);
+
+	_file_map.unmap();
+	std::error_code err;
+	auto new_file_map = mio::make_mmap_sink(_file_path, 0, mio::map_entire_file, err);
+
 	// we are done setting up
 	return std::make_unique<SHA1>(
 		_tcl,
-		std::move(_file_map),
+		std::move(new_file_map),
 		std::move(_sha1_info),
 		std::move(_sha1_info_data),
 		std::move(_sha1_info_hash),
