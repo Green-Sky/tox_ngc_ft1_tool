@@ -174,7 +174,8 @@ bool ToxClient::iterate(void) {
 	tox_iterate(_tox, this);
 	NGC_FT1_iterate(_tox, _ft1_ctx);
 
-	if (_state->iterate()) {
+	// HACK: hardcoded 5ms sleep in main
+	if (_state->iterate(0.005f)) {
 		_state = _state->nextState();
 
 		if (!_state) {
@@ -254,35 +255,16 @@ StateI& ToxClient::getState(void) {
 	return *_state.get();
 }
 
-#if 0
-// sha1_info
-void ToxClient::onFT1ReceiveRequestSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size) {
+bool ToxClient::sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id) {
+	return NGC_FT1_send_init_private(
+		_tox, _ft1_ctx,
+		group_number, peer_number,
+		file_kind,
+		file_id, file_id_size,
+		file_size,
+		&transfer_id
+	);
 }
-
-bool ToxClient::onFT1ReceiveInitSHA1Info(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size) {
-	return false; // deny
-}
-
-void ToxClient::onFT1ReceiveDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size) {
-}
-
-void ToxClient::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
-}
-
-// sha1_chunk
-void ToxClient::onFT1ReceiveRequestSHA1Chunk(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size) {
-}
-
-bool ToxClient::onFT1ReceiveInitSHA1Chunk(uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size) {
-	return false; // deny
-}
-
-void ToxClient::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size) {
-}
-
-void ToxClient::onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
-}
-#endif
 
 void ToxClient::saveToxProfile(void) {
 	if (_tox_profile_path.empty()) {

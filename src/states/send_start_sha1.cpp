@@ -56,7 +56,7 @@ SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl
 	std::cout << "SendStartSHA1 sha1_info_hash: " << bin2hex(_sha1_info_hash) << "\n";
 }
 
-bool SendStartSHA1::iterate(void) {
+bool SendStartSHA1::iterate(float) {
 	return true; // TODO: change hashing to async
 }
 

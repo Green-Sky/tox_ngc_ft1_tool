@@ -1,5 +1,7 @@
 #include "./sha1.hpp"
 
+#include "../tox_client.hpp"
+
 #include <iostream>
 
 namespace States {
@@ -28,7 +30,52 @@ SHA1::SHA1(
 	}
 }
 
-bool SHA1::iterate(void) {
+bool SHA1::iterate(float delta) {
+	// do ongoing transfers, send data?, timeout
+	// info
+	for (auto it = _transfers_requested_info.begin(); it != _transfers_requested_info.end();) {
+		float& time_since_remove_activity = std::get<float>(*it);
+		time_since_remove_activity += delta;
+
+		// if we have not heard for 10sec, timeout
+		if (time_since_remove_activity >= 10.f) {
+			std::cerr << "SHA1 info tansfer timed out " << std::get<0>(*it) << ":" << std::get<1>(*it) << "." << std::get<2>(*it) << "\n";
+			it = _transfers_requested_info.erase(it);
+		} else {
+			it++;
+		}
+	}
+
+	// if we have not reached the total cap for transfers
+	if (true) {
+		// for each peer? transfer cap per peer?
+
+		// first check requests for info
+		if (!_queue_requested_info.empty()) {
+			// send init to _queue_requested_info
+			const auto [group_number, peer_number] = _queue_requested_info.front();
+
+			uint8_t transfer_id {0};
+
+			_tcl.sendFT1InitPrivate(
+				group_number, peer_number,
+				NGC_FT1_file_kind::HASH_SHA1_INFO,
+				_sha1_info_hash.data.data(), _sha1_info_hash.size(), // id (info hash)
+				_sha1_info_data.size(), // "file_size"
+				transfer_id
+			);
+
+			_transfers_requested_info.push_back({
+				group_number, peer_number,
+				transfer_id,
+				0.f
+			});
+
+			_queue_requested_info.pop_front();
+		} else if (false) { // then check for chunk requests
+		}
+	}
+
 	// TODO: unmap and remap the file every couple of minutes to keep ram usage down?
 	// TODO: when to stop?
 	return false;
@@ -54,6 +101,9 @@ void SHA1::onFT1ReceiveRequestSHA1Info(uint32_t group_number, uint32_t peer_numb
 
 	// same hash, should respond
 	// prio higher then chunks?
+
+	// add to requested queue
+	queueUpRequestInfo(group_number, peer_number);
 }
 
 bool SHA1::onFT1ReceiveInitSHA1Info(uint32_t, uint32_t, const uint8_t*, size_t, const uint8_t, const size_t) {
@@ -63,6 +113,7 @@ bool SHA1::onFT1ReceiveInitSHA1Info(uint32_t, uint32_t, const uint8_t*, size_t, 
 
 void SHA1::onFT1ReceiveDataSHA1Info(uint32_t, uint32_t, uint8_t, size_t, const uint8_t*, size_t) {
 	// no, in this state we have init
+	assert(false && "ft should have said dropped this for us!");
 }
 
 void SHA1::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
@@ -74,7 +125,18 @@ void SHA1::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, ui
 	for (size_t i = 0; i < data_size; i++) {
 		data[i] = _sha1_info_data.at(data_offset+i);
 	}
-	// knowing when to end might be important
+
+	// if last data block
+	if (data_offset + data_size == _sha1_info_data.size()) {
+		// this transfer is "done" (ft still could have to retransfer)
+		for (auto it = _transfers_requested_info.cbegin(); it != _transfers_requested_info.cend(); it++) {
+			if (std::get<0>(*it) == group_number && std::get<1>(*it) == peer_number && std::get<2>(*it) == transfer_id) {
+				std::cout << "SHA1 info tansfer finished " << std::get<0>(*it) << ":" << std::get<1>(*it) << "." << std::get<2>(*it) << "\n";
+				_transfers_requested_info.erase(it);
+				break;
+			}
+		}
+	}
 }
 
 // sha1_chunk
@@ -97,6 +159,26 @@ void SHA1::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number
 }
 
 void SHA1::onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {
+}
+
+void SHA1::queueUpRequestInfo(uint32_t group_number, uint32_t peer_number) {
+	// check ongoing transfers for dup
+	for (const auto& it : _transfers_requested_info) {
+		// if allready in queue
+		if (std::get<0>(it) == group_number && std::get<1>(it) == peer_number) {
+			return;
+		}
+	}
+
+	for (auto& [i_g, i_p] : _queue_requested_info) {
+		// if allready in queue
+		if (i_g == group_number && i_p == peer_number) {
+			return;
+		}
+	}
+
+	// not in queue yet
+	_queue_requested_info.push_back(std::make_pair(group_number, peer_number));
 }
 
 } // States

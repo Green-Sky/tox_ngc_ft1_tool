@@ -16,7 +16,7 @@ struct SendStartSHA1 final : public StateI {
 		SendStartSHA1(ToxClient& tcl, const CommandLine& cl);
 		~SendStartSHA1(void) override = default;
 
-		bool iterate(void) override;
+		bool iterate(float delta) override;
 		std::unique_ptr<StateI> nextState(void) override;
 
 	public: // callbacks

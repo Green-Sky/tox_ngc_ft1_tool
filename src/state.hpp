@@ -11,7 +11,7 @@ struct StateI {
 		virtual ~StateI(void) = default;
 
 		// returns true if we should call nextState()
-		virtual bool iterate(void) = 0;
+		virtual bool iterate(float delta) = 0;
 		// returns the new state (transition)
 		virtual std::unique_ptr<StateI> nextState(void) = 0;
 
