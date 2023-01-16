@@ -284,7 +284,7 @@ bool SHA1::onFT1ReceiveInitSHA1Chunk(uint32_t group_number, uint32_t peer_number
 	SHA1Digest incomming_hash(file_id, file_id_size);
 
 	if (haveChunk(incomming_hash)) {
-		std::cout << "SHA1 ignoring init for chunk we allready have " << incomming_hash << "\n";
+		std::cout << "SHA1 ignoring init for chunk we already have " << incomming_hash << "\n";
 		return false;
 	}
 
@@ -300,7 +300,7 @@ bool SHA1::onFT1ReceiveInitSHA1Chunk(uint32_t group_number, uint32_t peer_number
 	// check transfers
 	for (const auto& it : _transfers_receiving_chunk) {
 		if (std::get<4>(it) == chunk_index) {
-			// allready in transition
+			// already in transition
 			return false;
 		}
 	}
@@ -389,14 +389,14 @@ void SHA1::onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, u
 void SHA1::queueUpRequestInfo(uint32_t group_number, uint32_t peer_number) {
 	// check ongoing transfers for dup
 	for (const auto& it : _transfers_requested_info) {
-		// if allready in queue
+		// if already in queue
 		if (std::get<0>(it) == group_number && std::get<1>(it) == peer_number) {
 			return;
 		}
 	}
 
 	for (auto& [i_g, i_p] : _queue_requested_info) {
-		// if allready in queue
+		// if already in queue
 		if (i_g == group_number && i_p == peer_number) {
 			return;
 		}
@@ -410,7 +410,7 @@ void SHA1::queueUpRequestChunk(uint32_t group_number, uint32_t peer_number, cons
 	// TODO: transfers
 
 	for (auto& [i_g, i_p, i_h] : _queue_requested_chunk) {
-		// if allready in queue
+		// if already in queue
 		if (i_g == group_number && i_p == peer_number && i_h == hash) {
 			return;
 		}

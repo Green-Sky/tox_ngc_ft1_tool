@@ -132,7 +132,7 @@ bool ReceiveStartSHA1::onFT1ReceiveInitSHA1Info(uint32_t group_number, uint32_t 
 
 	if (_transfer.has_value()) {
 		// TODO: log?
-		return false; // allready in progress
+		return false; // already in progress
 	}
 
 	_sha1_info_data.resize(file_size);
