@@ -20,7 +20,7 @@
 
 namespace States {
 
-ReceiveStartSHA1::ReceiveStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl) {
+ReceiveStartSHA1::ReceiveStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl), _dump_dir(cl.receive_dump_dir) {
 	if (cl.receive_id.empty()) {
 		throw std::runtime_error("receiver missing id");
 	}
@@ -72,33 +72,43 @@ std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
 
 	std::cout << "ReceiveStartSHA1 info is: \n" << sha1_info;
 
-	bool file_existed = std::filesystem::exists(sha1_info.file_name);
+	auto file_path = std::filesystem::path{_dump_dir} / sha1_info.file_name;
+
+	bool file_existed = std::filesystem::exists(file_path);
 	if (!file_existed) {
-		std::ofstream(sha1_info.file_name) << '\0'; // create the file
+		if (!_dump_dir.empty()) {
+			std::filesystem::create_directories(_dump_dir);
+		}
+		std::ofstream(file_path) << '\0'; // create the file
 	}
-	std::filesystem::resize_file(sha1_info.file_name, sha1_info.file_size);
+	std::filesystem::resize_file(file_path, sha1_info.file_size);
 
 	// open file for writing (pre allocate?)
 	std::error_code err;
-	mio::mmap_sink file_map = mio::make_mmap_sink(sha1_info.file_name, 0, sha1_info.file_size, err);
+	mio::mmap_sink file_map = mio::make_mmap_sink(file_path.string(), 0, sha1_info.file_size, err);
 
 	std::vector<bool> have_chunk(sha1_info.chunks.size(), false);
 
 	// dont overwrite correct existing data
 	if (file_existed) {
 		std::cout << "ReceiveStartSHA1 checking existing file\n";
-		size_t f_i = 0;
+		size_t f_i {0};
+		size_t tmp_have_count {0};
 		for (size_t c_i = 0; f_i + FTInfoSHA1::chunk_size < file_map.length(); f_i += FTInfoSHA1::chunk_size, c_i++) {
 			if (sha1_info.chunks[c_i] == hash_sha1(file_map.data()+f_i, FTInfoSHA1::chunk_size)) {
 				have_chunk[c_i] = true;
+				tmp_have_count++;
 			}
 		}
 
 		if (f_i < file_map.length()) {
 			if (sha1_info.chunks.back() == hash_sha1(file_map.data()+f_i, file_map.length()-f_i)) {
 				have_chunk.back() = true;
+				tmp_have_count++;
 			}
 		}
+
+		std::cout << "ReceiveStartSHA1 have " << tmp_have_count << "/" << sha1_info.chunks.size() << "chunks (" << float(tmp_have_count)/sha1_info.chunks.size() << "%)\n";
 	}
 
 	std::cout << "ReceiveStartSHA1 switching state to SHA1\n";

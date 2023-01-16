@@ -6,6 +6,8 @@
 #include "./states/send_start_sha1.hpp"
 #include "./states/receive_start_sha1.hpp"
 #include "ngc_ft1.h"
+#include "tox/tox.h"
+#include "toxcore/tox.h"
 
 #include <memory>
 #include <sodium.h>
@@ -26,9 +28,22 @@ ToxClient::ToxClient(const CommandLine& cl) :
 
 	// use cl for options
 	tox_options_set_log_callback(options, log_cb);
-	tox_options_set_local_discovery_enabled(options, false);
-	tox_options_set_udp_enabled(options, true);
-	tox_options_set_hole_punching_enabled(options, true);
+	tox_options_set_local_discovery_enabled(options, !cl.tox_disable_local_discovery);
+	tox_options_set_udp_enabled(options, !cl.tox_disable_udp);
+	tox_options_set_hole_punching_enabled(options, !cl.tox_disable_udp);
+	if (!cl.proxy_host.empty()) {
+		tox_options_set_proxy_host(options, cl.proxy_host.c_str());
+		tox_options_set_proxy_port(options, cl.proxy_port);
+		tox_options_set_proxy_type(options, Tox_Proxy_Type::TOX_PROXY_TYPE_SOCKS5);
+	} else {
+		tox_options_set_proxy_type(options, Tox_Proxy_Type::TOX_PROXY_TYPE_NONE);
+	}
+
+	if (cl.tox_port != 0) {
+		tox_options_set_start_port(options, cl.tox_port);
+		// TODO: extra end port?
+		tox_options_set_end_port(options, cl.tox_port);
+	}
 
 	std::vector<uint8_t> profile_data{};
 	if (!_tox_profile_path.empty()) {
@@ -163,6 +178,12 @@ ToxClient::ToxClient(const CommandLine& cl) :
 		}
 	}
 
+	if (!cl.chat_id.empty()) {
+		// TODO: move conversion and size check to cl
+		_join_group_after_dht_connect = hex2bin(cl.chat_id);
+		assert(_join_group_after_dht_connect.size() == TOX_GROUP_CHAT_ID_SIZE);
+	}
+
 	_tox_profile_dirty = true;
 }
 
@@ -210,6 +231,14 @@ void ToxClient::onToxSelfConnectionStatus(TOX_CONNECTION connection_status) {
 		case TOX_CONNECTION::TOX_CONNECTION_TCP: std::cout << "TCP-relayed\n"; break;
 		case TOX_CONNECTION::TOX_CONNECTION_UDP: std::cout << "UDP-direct\n"; break;
 	}
+
+	if (connection_status != TOX_CONNECTION::TOX_CONNECTION_NONE && !_join_group_after_dht_connect.empty()) {
+		// TODO: error checking
+		tox_group_join(_tox, _join_group_after_dht_connect.data(), nullptr, 0, nullptr, 0, nullptr);
+		std::cout << "TCL joining group " << bin2hex(_join_group_after_dht_connect) << "\n";
+		_join_group_after_dht_connect.clear();
+	}
+
 	_tox_profile_dirty = true;
 }
 

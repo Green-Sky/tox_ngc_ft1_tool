@@ -1,5 +1,6 @@
 #include "./command_line.hpp"
 
+#include <charconv>
 #include <iostream>
 #include <cassert>
 
@@ -76,6 +77,40 @@ CommandLine::CommandLine(int argc, char** argv) {
 				PRINT_HELP_AND_BAIL;
 			}
 			receive_id = argv[++i];
+		} else if (arg_sv == "-L") {
+			tox_disable_local_discovery = true;
+		} else if (arg_sv == "-U") {
+			tox_disable_udp = true;
+		} else if (arg_sv == "-P") {
+			if (i+2 >= argc) {
+				std::cerr << "ERROR: -P missing <host> and/or <port> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
+			}
+
+			std::string_view host_sv{argv[++i]};
+			std::string_view port_sv{argv[++i]};
+
+			proxy_host = host_sv;
+
+			auto res = std::from_chars(port_sv.data(), port_sv.data()+port_sv.size(), proxy_port);
+			if (res.ptr != port_sv.data()+port_sv.size()) {
+				std::cerr << "ERROR: invalid <port>!\n\n";
+				PRINT_HELP_AND_BAIL;
+			}
+			std::cout << "CL set proxy to " << proxy_host << proxy_port << "\n";
+		} else if (arg_sv == "-p") {
+			if (i+1 >= argc) {
+				std::cerr << "ERROR: -p missing <port> parameter!\n\n";
+				PRINT_HELP_AND_BAIL;
+			}
+
+			std::string_view port_sv{argv[++i]};
+			auto res = std::from_chars(port_sv.data(), port_sv.data()+port_sv.size(), tox_port);
+			if (res.ptr != port_sv.data()+port_sv.size()) {
+				std::cerr << "ERROR: invalid <port>!\n\n";
+				PRINT_HELP_AND_BAIL;
+			}
+			std::cout << "CL set tox_port to " << tox_port << "\n";
 		} else {
 			std::cerr << "ERROR: unknown parameter '" << arg_sv << "' !\n\n";
 			PRINT_HELP_AND_BAIL;
@@ -102,7 +137,7 @@ void CommandLine::printHelp(void) {
 		<< " -N <self_name> (defaults to 'tox_ngc_ft1_tool')\n"
 		<< " will print friend id at startup\n"
 		<< " will autoaccept any invite\n"
-		<< " if no -F give, will not save profile.\n"
+		<< " if no -F given, will not save profile.\n"
 		<< " if profile exists load, otherwise create new\n"
 		<< "\n"
 		<< " transfer variant:\n"
@@ -114,6 +149,19 @@ void CommandLine::printHelp(void) {
 		<< " receive:\n"
 		<< " -d dump/everything/in/this/dir\n"
 		<< " -D <id/hash> (what to dl)\n"
+		<< "\n"
+		<< "!!! ADVANCED !!!\n"
+		<< " tox:\n"
+		<< " -L disable local discovery\n"
+		<< " -U disable udp\n"
+		<< " -P proxy_host proxy_port\n"
+		<< " -p tox_port (bind tox to that port)\n"
+		<< "\n"
+		<< " FT1:\n"
+		<< " TODO\n"
+		<< "\n"
+		<< " transfer logic:\n"
+		<< " TODO\n"
 	;
 }
 

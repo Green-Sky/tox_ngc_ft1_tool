@@ -2,30 +2,6 @@
 
 #include <string>
 
-// meta:
-// -v version info
-// -V verbose
-// -h help
-//
-// connectivity:
-// -G <chat_id>
-// -F profile.tox
-// -N <self_name>
-// will print friend id at startup
-// will autoaccept any invite
-// if no -F give, will not save profile.
-// if profile exists load, otherwise create new
-//
-// transfer variant:
-// -a id1/sha1_single/sha1_info/sha2_single/sha2_info
-//
-// send:
-// -f send_this_file.zip
-//
-// receive:
-// -d dump/everything/in/this/dir
-// -D <id/hash> (what to dl)
-
 enum class TransferE {
 	INVALID,
 
@@ -67,6 +43,28 @@ struct CommandLine {
 	std::string receive_dump_dir;
 	// -D <id/hash> (what to dl)
 	std::string receive_id;
+
+	// advanced tox:
+	// -L disable local discovery
+	bool tox_disable_local_discovery {false};
+	// -U disable udp (why?)
+	bool tox_disable_udp {false};
+	// -P proxy_host proxy_port
+	std::string proxy_host;
+	uint16_t proxy_port {0};
+	// -p port (start and end is set to the same port)
+	uint16_t tox_port {0};
+
+	// ---- TODO ----
+
+	// advanced FT1:
+	// -w packet_window_size
+	// TODO: all them timeouts
+
+	// advaced dl:
+	// -I max_incoming_transfers (default 16)
+	// -O max_outgoing_transfers (default 4)
+	// -u request chunks only from UDP-direct peers
 
 	CommandLine(int argc, char** argv);
 

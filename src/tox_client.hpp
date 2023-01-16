@@ -13,6 +13,7 @@
 #include <string_view>
 #include <map>
 #include <set>
+#include <vector>
 
 // fwd
 namespace States {
@@ -76,6 +77,8 @@ struct ToxClient {
 
 		std::string _tox_profile_path;
 		bool _tox_profile_dirty {false}; // set in callbacks
+
+		std::vector<uint8_t> _join_group_after_dht_connect;
 
 		std::unique_ptr<StateI> _state;
 
