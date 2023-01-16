@@ -253,6 +253,7 @@ void ToxClient::onToxGroupPeerExit(uint32_t group_number, uint32_t peer_id, Tox_
 void ToxClient::onToxGroupSelfJoin(uint32_t group_number) {
 	std::cout << "TCL group self join " << group_number << "\n";
 	// ???
+	// can be triggered after other peers allready joined o.o
 	_tox_profile_dirty = true;
 }
 

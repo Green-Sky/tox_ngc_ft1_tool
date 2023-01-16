@@ -82,7 +82,20 @@ bool SHA1::iterate(float delta) {
 			// if we have not heard for 10sec, timeout
 			if (time_since_remove_activity >= 10.f) {
 				std::cerr << "SHA1 receiving chunk tansfer timed out " << std::get<0>(*it) << ":" << std::get<1>(*it) << "." << int(std::get<2>(*it)) << "\n";
+				_chunk_want_queue.push_back(std::get<4>(*it)); // put it back
 				it = _transfers_receiving_chunk.erase(it);
+			} else {
+				it++;
+			}
+		}
+		// sent requests
+		for (auto it = _chunks_requested.begin(); it != _chunks_requested.end();) {
+			it->second += delta;
+
+			// if we have not heard for 15sec, timeout
+			if (it->second >= 15.f) {
+				_chunk_want_queue.push_back(it->first); // put it back
+				it = _chunks_requested.erase(it);
 			} else {
 				it++;
 			}
@@ -142,7 +155,7 @@ bool SHA1::iterate(float delta) {
 		}
 	}
 
-	if (!_have_all && !_chunk_want_queue.empty() && _transfers_receiving_chunk.size() < _max_concurrent_in) {
+	if (!_have_all && !_chunk_want_queue.empty() && _chunks_requested.size() + _transfers_receiving_chunk.size() < _max_concurrent_in) {
 		// send out request, no burst tho
 		std::vector<std::pair<uint32_t, uint32_t>> target_peers;
 		_tcl.forEachGroup([&target_peers, this](uint32_t group_number) {
@@ -162,7 +175,7 @@ bool SHA1::iterate(float delta) {
 			auto [group_number, peer_number] = target_peers.at(target_index);
 
 			size_t chunk_index = _chunk_want_queue.front();
-			_chunks_requested.emplace(chunk_index);
+			_chunks_requested[chunk_index] = 0.f;
 			_chunk_want_queue.pop_front();
 
 			_tcl.sendFT1RequestPrivate(group_number, peer_number, NGC_FT1_file_kind::HASH_SHA1_CHUNK, _sha1_info.chunks[chunk_index].data.data(), 20);
@@ -300,6 +313,9 @@ bool SHA1::onFT1ReceiveInitSHA1Chunk(uint32_t group_number, uint32_t peer_number
 			chunk_index
 		)
 	);
+
+	// remove form requests
+	_chunks_requested.erase(chunk_index);
 
 	return true;
 }

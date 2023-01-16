@@ -7,7 +7,7 @@
 #include <mio/mio.hpp>
 
 #include <unordered_map>
-#include <set>
+#include <map>
 #include <vector>
 #include <deque>
 #include <random>
@@ -66,10 +66,11 @@ struct SHA1 final : public StateI {
 		bool _have_all {false};
 		size_t _have_count {0};
 		std::deque<size_t> _chunk_want_queue;
-		std::set<size_t> _chunks_requested;
+		// chunk_index -> time since request
+		std::map<size_t, float> _chunks_requested;
 
 		const size_t _max_concurrent_out {4};
-		const size_t _max_concurrent_in {4};
+		const size_t _max_concurrent_in {16};
 
 		std::minstd_rand _rng {1337};
 		std::uniform_int_distribution<size_t> _distrib;

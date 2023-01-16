@@ -27,7 +27,7 @@ SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl
 	assert(!_file_map.empty());
 
 	// build info
-	_sha1_info.file_name = std::filesystem::path(cl.send_path).filename();
+	_sha1_info.file_name = std::filesystem::path(cl.send_path).filename().string();
 	_sha1_info.file_size = _file_map.length();
 
 	{ // build chunks
