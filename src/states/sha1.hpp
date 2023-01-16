@@ -6,6 +6,7 @@
 
 #include <mio/mio.hpp>
 
+#include <unordered_map>
 #include <vector>
 #include <deque>
 
@@ -46,6 +47,10 @@ struct SHA1 final : public StateI {
 		// avoids duplicates
 		// clears timer if exists
 		void queueUpRequestInfo(uint32_t group_number, uint32_t peer_number);
+		void queueUpRequestChunk(uint32_t group_number, uint32_t peer_number, const SHA1Digest& hash);
+
+		std::optional<size_t> chunkIndex(const SHA1Digest& hash) const;
+		bool haveChunk(const SHA1Digest& hash) const;
 
 	private:
 		mio::mmap_sink _file_map; // writable if not all
@@ -56,11 +61,21 @@ struct SHA1 final : public StateI {
 		// index is the same as for info
 		std::vector<bool> _have_chunk;
 		bool _have_all {false};
+		size_t _have_count {0};
+
+		std::unordered_map<SHA1Digest, size_t> _chunk_hash_to_index;
 
 		// group_number, peer_number
 		std::deque<std::pair<uint32_t, uint32_t>> _queue_requested_info;
-		// group_number, peer_number, transfer_id, second since (remote) activity
+		// group_number, peer_number, transfer_id, seconds since (remote) activity
 		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float>> _transfers_requested_info;
+
+		// group_number, peer_number, chunk_hash
+		std::deque<std::tuple<uint32_t, uint32_t, SHA1Digest>> _queue_requested_chunk;
+
+		// group_number, peer_number, transfer_id(i/o), seconds since (remote) activity, chunk index
+		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float, size_t>> _transfers_sending_chunk;
+		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float, size_t>> _transfers_receiving_chunk;
 };
 
 } // States
