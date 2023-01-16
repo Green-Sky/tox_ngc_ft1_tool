@@ -7,8 +7,10 @@
 #include <mio/mio.hpp>
 
 #include <unordered_map>
+#include <set>
 #include <vector>
 #include <deque>
+#include <random>
 
 namespace States {
 
@@ -50,6 +52,7 @@ struct SHA1 final : public StateI {
 		void queueUpRequestChunk(uint32_t group_number, uint32_t peer_number, const SHA1Digest& hash);
 
 		std::optional<size_t> chunkIndex(const SHA1Digest& hash) const;
+		size_t chunkSize(size_t chunk_index) const;
 		bool haveChunk(const SHA1Digest& hash) const;
 
 	private:
@@ -62,6 +65,14 @@ struct SHA1 final : public StateI {
 		std::vector<bool> _have_chunk;
 		bool _have_all {false};
 		size_t _have_count {0};
+		std::deque<size_t> _chunk_want_queue;
+		std::set<size_t> _chunks_requested;
+
+		const size_t _max_concurrent_out {4};
+		const size_t _max_concurrent_in {4};
+
+		std::minstd_rand _rng {1337};
+		std::uniform_int_distribution<size_t> _distrib;
 
 		std::unordered_map<SHA1Digest, size_t> _chunk_hash_to_index;
 

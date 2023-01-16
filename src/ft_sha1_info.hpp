@@ -43,7 +43,7 @@ namespace std { // inject
 struct FTInfoSHA1 {
 	std::string file_name;
 	uint64_t file_size {0};
-	static constexpr size_t chunk_size {4*1024}; // 4KiB for now
+	static constexpr size_t chunk_size {64*1024}; // 64KiB for now
 	std::vector<SHA1Digest> chunks;
 
 	std::vector<uint8_t> toBuffer(void) const;
