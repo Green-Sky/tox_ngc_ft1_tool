@@ -82,7 +82,7 @@ bool SHA1::iterate(float delta) {
 			// if we have not heard for 10sec, timeout
 			if (time_since_remove_activity >= 10.f) {
 				std::cerr << "SHA1 receiving chunk tansfer timed out " << std::get<0>(*it) << ":" << std::get<1>(*it) << "." << int(std::get<2>(*it)) << "\n";
-				_chunk_want_queue.push_back(std::get<4>(*it)); // put it back
+				_chunk_want_queue.push_front(std::get<4>(*it)); // put it back
 				it = _transfers_receiving_chunk.erase(it);
 			} else {
 				it++;
@@ -94,7 +94,7 @@ bool SHA1::iterate(float delta) {
 
 			// if we have not heard for 15sec, timeout
 			if (it->second >= 15.f) {
-				_chunk_want_queue.push_back(it->first); // put it back
+				_chunk_want_queue.push_front(it->first); // put it back
 				it = _chunks_requested.erase(it);
 			} else {
 				it++;
@@ -344,6 +344,7 @@ void SHA1::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number
 				if (test_hash != _sha1_info.chunks[chunk_index]) {
 					std::cerr << "SHA1 received chunks's hash does not match!, discarding\n";
 					_transfers_receiving_chunk.erase(it);
+					_chunk_want_queue.push_front(chunk_index); // put back in queue
 					break;
 				}
 
