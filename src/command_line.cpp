@@ -122,6 +122,8 @@ CommandLine::CommandLine(int argc, char** argv) {
 		} else if (parser.parseParam("--ft_sending_resend_without_ack_after", ft_sending_resend_without_ack_after)) {
 		} else if (parser.parseParam("--ft_sending_give_up_after", ft_sending_give_up_after)) {
 		} else if (parser.parseParam("--ft_packet_window_size", ft_packet_window_size)) {
+		} else if (parser.parseParam("-I", max_incoming_transfers)) {
+		} else if (parser.parseParam("-O", max_outgoing_transfers)) {
 		} else {
 			std::cerr << "ERROR: unknown parameter '" << arg_sv << "' !\n\n";
 			PRINT_HELP_AND_BAIL;
@@ -180,7 +182,8 @@ void CommandLine::printHelp(void) {
 		<< " --ft_packet_window_size\n"
 		<< "\n"
 		<< " transfer logic:\n"
-		<< " TODO\n"
+		<< " -I <max_incoming_transfers>\n"
+		<< " -O <max_outgoing_transfers>\n"
 	;
 }
 

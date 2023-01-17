@@ -33,6 +33,7 @@ struct ReceiveStartSHA1 final : public StateI {
 		void onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) override;
 
 	private:
+		const CommandLine& _cl;
 		std::string _dump_dir;
 
 		//FTInfoSHA1 _sha1_info;

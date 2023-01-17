@@ -11,6 +11,7 @@ namespace States {
 
 SHA1::SHA1(
 	ToxClient& tcl,
+	const CommandLine& cl,
 	mio::mmap_sink&& file_map,
 	const FTInfoSHA1&& sha1_info,
 	const std::vector<uint8_t>&& sha1_info_data,
@@ -26,6 +27,9 @@ SHA1::SHA1(
 	_have_chunk(std::move(have_chunk))
 {
 	assert(_have_chunk.size() == _sha1_info.chunks.size());
+
+	_max_concurrent_in = cl.max_incoming_transfers;
+	_max_concurrent_out = cl.max_incoming_transfers;
 
 	_have_all = true;
 	_have_count = 0;

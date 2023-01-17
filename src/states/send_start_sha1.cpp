@@ -17,7 +17,7 @@
 
 namespace States {
 
-SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl), _file_path(cl.send_path) {
+SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl), _cl(cl), _file_path(cl.send_path) {
 	std::cout << "SendStartSHA1 start building sha1_info\n";
 	std::error_code err;
 	_file_map = mio::make_mmap_source(cl.send_path, 0, mio::map_entire_file, err);
@@ -72,6 +72,7 @@ std::unique_ptr<StateI> SendStartSHA1::nextState(void) {
 	// we are done setting up
 	return std::make_unique<SHA1>(
 		_tcl,
+		_cl,
 		std::move(new_file_map),
 		std::move(_sha1_info),
 		std::move(_sha1_info_data),

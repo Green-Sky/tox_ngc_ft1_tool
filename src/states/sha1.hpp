@@ -3,6 +3,7 @@
 #include "../state.hpp"
 
 #include "../ft_sha1_info.hpp"
+#include "../command_line.hpp"
 
 #include <mio/mio.hpp>
 
@@ -20,6 +21,7 @@ struct SHA1 final : public StateI {
 	public: // general interface
 		SHA1(
 			ToxClient& tcl,
+			const CommandLine& cl,
 			mio::mmap_sink&& file_map,
 			const FTInfoSHA1&& sha1_info,
 			const std::vector<uint8_t>&& sha1_info_data,
@@ -75,8 +77,8 @@ struct SHA1 final : public StateI {
 		// chunk_index -> time since request
 		std::map<size_t, float> _chunks_requested;
 
-		const size_t _max_concurrent_out {16};
-		const size_t _max_concurrent_in {32};
+		size_t _max_concurrent_in {32};
+		size_t _max_concurrent_out {16};
 
 		std::minstd_rand _rng {1337};
 		std::uniform_int_distribution<size_t> _distrib;

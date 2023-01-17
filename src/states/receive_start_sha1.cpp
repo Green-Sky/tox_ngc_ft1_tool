@@ -20,7 +20,7 @@
 
 namespace States {
 
-ReceiveStartSHA1::ReceiveStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl), _dump_dir(cl.receive_dump_dir) {
+ReceiveStartSHA1::ReceiveStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl), _cl(cl), _dump_dir(cl.receive_dump_dir) {
 	if (cl.receive_id.empty()) {
 		throw std::runtime_error("receiver missing id");
 	}
@@ -41,7 +41,7 @@ bool ReceiveStartSHA1::iterate(float delta) {
 
 		// timout if not heard after 10s
 		if (time_since_remote_activity >= 10.f) {
-			std::cerr << "ReceiveStartSHA1 info tansfer timed out " << std::get<0>(*_transfer) << ":" << std::get<1>(*_transfer) << "." << std::get<2>(*_transfer) << "\n";
+			std::cerr << "ReceiveStartSHA1 info tansfer timed out " << std::get<0>(*_transfer) << ":" << std::get<1>(*_transfer) << "." << int(std::get<2>(*_transfer)) << "\n";
 
 			_transfer.reset();
 		}
@@ -114,6 +114,7 @@ std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
 	std::cout << "ReceiveStartSHA1 switching state to SHA1\n";
 	return std::make_unique<SHA1>(
 		_tcl,
+		_cl,
 		std::move(file_map),
 		std::move(sha1_info),
 		std::move(_sha1_info_data),
@@ -148,7 +149,7 @@ bool ReceiveStartSHA1::onFT1ReceiveInitSHA1Info(uint32_t group_number, uint32_t 
 	_sha1_info_data.resize(file_size);
 
 	_transfer = std::make_tuple(group_number, peer_number, transfer_id, 0.f);
-	std::cout << "ReceiveStartSHA1 accepted info transfer" << group_number << ":" << peer_number << "." << transfer_id << "\n";
+	std::cout << "ReceiveStartSHA1 accepted info transfer" << group_number << ":" << peer_number << "." << int(transfer_id) << "\n";
 
 	// accept
 	return true;
@@ -174,7 +175,7 @@ void ReceiveStartSHA1::onFT1ReceiveDataSHA1Info(uint32_t group_number, uint32_t 
 			_sha1_info_data.clear();
 		}
 
-		std::cout << "ReceiveStartSHA1 info tansfer finished " << group_number << ":" << peer_number << "." << transfer_id << "\n";
+		std::cout << "ReceiveStartSHA1 info tansfer finished " << group_number << ":" << peer_number << "." << int(transfer_id) << "\n";
 		_done = true;
 	}
 }
