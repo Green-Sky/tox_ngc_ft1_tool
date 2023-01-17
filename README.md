@@ -36,5 +36,12 @@ $ tox_ngc_ft1_tool
  -U disable udp
  -P proxy_host proxy_port
  -p tox_port (bind tox to that port)
+
+ FT1:
+ --ft_ack_per_packet
+ --ft_init_retry_timeout_after
+ --ft_sending_resend_without_ack_after
+ --ft_sending_give_up_after
+ --ft_packet_window_size
 ```
 

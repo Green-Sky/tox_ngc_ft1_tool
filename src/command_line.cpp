@@ -3,116 +3,131 @@
 #include <charconv>
 #include <iostream>
 #include <cassert>
+#include <type_traits>
+
+struct CLParser {
+	const size_t argc;
+	const char*const* argv;
+	size_t& i;
+
+	bool error {false};
+
+bool parseFlag(std::string_view arg_sv, bool& flag) {
+	std::string_view arg0_sv{argv[i]};
+
+	if (arg0_sv != arg_sv) {
+		return false;
+	}
+
+	flag = true;
+
+	return true;
+}
+
+template<typename FN, typename Arg0, typename ...Args>
+static void visit(FN&& fn, Arg0&& arg0, Args&& ...args) {
+	fn(arg0);
+	(fn(args),...);
+}
+
+template<typename Arg0, typename ...Args>
+bool parseParam(std::string_view arg_sv, Arg0& arg0, Args& ...args) {
+	std::string_view arg0_sv{argv[i]};
+
+	if (arg0_sv != arg_sv) {
+		return false;
+	}
+
+	if (argc < 1+1+sizeof...(args)) {
+		std::cerr << "ERROR: " << arg_sv << " not enough parameters!\n\n";
+		error = true;
+		return true;
+	}
+
+	visit([this](auto& arg) {
+		if (error) return;
+
+		std::string_view argX_sv{argv[++i]};
+
+		using T = std::decay_t<decltype(arg)>;
+		if constexpr (std::is_same_v<T, std::string>) {
+			arg = argX_sv;
+		} else if constexpr (std::is_integral_v<T>) {
+			auto res = std::from_chars(argX_sv.data(), argX_sv.data()+argX_sv.size(), arg);
+			if (res.ptr != argX_sv.data() + argX_sv.size()) {
+				std::cerr << "ERROR: invalid parameter!\n\n";
+				error = true;
+				//PRINT_HELP_AND_BAIL;
+			}
+		} else if constexpr (std::is_same_v<T, float>) {
+			// HACK: wait for more charconv <.<
+			std::string tmp_str {argX_sv};
+			arg = std::stof(tmp_str);
+		} else {
+			assert(false && "invalid parameter type");
+		}
+	}, arg0, args...);
+
+	return true;
+}
+
+};
 
 CommandLine::CommandLine(int argc, char** argv) {
 	assert(argc > 0);
 
 	exe = argv[0];
 
-	for (int i = 1; i < argc; i++) {
-		std::string_view arg_sv{argv[i]};
+	for (size_t i = 1; i < size_t(argc); i++) {
+		CLParser parser{size_t(argc), argv, i};
+		std::string_view arg_sv{argv[i]}; // alt
 
 #define PRINT_HELP_AND_BAIL printHelp(); _should_exit = true; return;
 
-		if (arg_sv == "-v") {
-			version = true;
+		if (parser.parseFlag("-v", version)) {
 			_should_exit = true;
-		} else if (arg_sv == "-V") {
-			verbose = true;
+		} else if (parser.parseFlag("-V", verbose)) {
 		} else if (arg_sv == "-h") {
 			help = true;
 			printHelp();
 			_should_exit = true;
-		} else if (arg_sv == "-G") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -G missing <chat_id> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			chat_id = argv[++i];
-		} else if (arg_sv == "-F") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -F missing <path> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			profile_path = argv[++i];
-		} else if (arg_sv == "-N") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -N missing <self_name> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			self_name = argv[++i];
-		} else if (arg_sv == "-a") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -a missing <transfer_variant> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			std::string_view tv_sv{argv[++i]};
-
-			if (tv_sv == "id1") {
+		} else if (parser.parseParam("-G", chat_id)) {
+		} else if (parser.parseParam("-F", profile_path)) {
+		} else if (parser.parseParam("-N", self_name)) {
+		} else if (std::string tv; parser.parseParam("-a", tv)) {
+			if (tv == "id1") {
 				transfer_variant = TransferE::ID;
-			} else if (tv_sv == "sha1_single") {
+			} else if (tv == "sha1_single") {
 				transfer_variant = TransferE::SHA1_SINGLE;
-			} else if (tv_sv == "sha1_info") {
+			} else if (tv == "sha1_info") {
 				transfer_variant = TransferE::SHA1_INFO;
 			} else {
 				std::cerr << "ERROR: invalid <transfer_variant> parameter!\n\n";
 				PRINT_HELP_AND_BAIL;
 			}
-
-		} else if (arg_sv == "-f") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -f missing <path> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			send_path = argv[++i];
-		} else if (arg_sv == "-d") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -d missing <path> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			receive_dump_dir = argv[++i];
-		} else if (arg_sv == "-D") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -D missing <id/hash> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-			receive_id = argv[++i];
-		} else if (arg_sv == "-L") {
-			tox_disable_local_discovery = true;
-		} else if (arg_sv == "-U") {
-			tox_disable_udp = true;
-		} else if (arg_sv == "-P") {
-			if (i+2 >= argc) {
-				std::cerr << "ERROR: -P missing <host> and/or <port> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-
-			std::string_view host_sv{argv[++i]};
-			std::string_view port_sv{argv[++i]};
-
-			proxy_host = host_sv;
-
-			auto res = std::from_chars(port_sv.data(), port_sv.data()+port_sv.size(), proxy_port);
-			if (res.ptr != port_sv.data()+port_sv.size()) {
-				std::cerr << "ERROR: invalid <port>!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
+		} else if (parser.parseParam("-f", send_path)) {
+		} else if (parser.parseParam("-d", receive_dump_dir)) {
+			std::cout << "CL going to write to '" << receive_dump_dir << "'\n";
+		} else if (parser.parseParam("-D", receive_id)) {
+		} else if (parser.parseFlag("-L", tox_disable_local_discovery)) {
+			std::cout << "CL disabled local discovery\n";
+		} else if (parser.parseFlag("-U", tox_disable_udp)) {
+			std::cout << "CL disabled udp\n";
+		} else if (parser.parseParam("-P", proxy_host, proxy_port)) {
 			std::cout << "CL set proxy to " << proxy_host << proxy_port << "\n";
-		} else if (arg_sv == "-p") {
-			if (i+1 >= argc) {
-				std::cerr << "ERROR: -p missing <port> parameter!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
-
-			std::string_view port_sv{argv[++i]};
-			auto res = std::from_chars(port_sv.data(), port_sv.data()+port_sv.size(), tox_port);
-			if (res.ptr != port_sv.data()+port_sv.size()) {
-				std::cerr << "ERROR: invalid <port>!\n\n";
-				PRINT_HELP_AND_BAIL;
-			}
+		} else if (parser.parseParam("-p", tox_port)) {
 			std::cout << "CL set tox_port to " << tox_port << "\n";
+		} else if (parser.parseParam("--ft_ack_per_packet", ft_acks_per_packet)) {
+		} else if (parser.parseParam("--ft_init_retry_timeout_after", ft_init_retry_timeout_after)) {
+		} else if (parser.parseParam("--ft_sending_resend_without_ack_after", ft_sending_resend_without_ack_after)) {
+		} else if (parser.parseParam("--ft_sending_give_up_after", ft_sending_give_up_after)) {
+		} else if (parser.parseParam("--ft_packet_window_size", ft_packet_window_size)) {
 		} else {
 			std::cerr << "ERROR: unknown parameter '" << arg_sv << "' !\n\n";
+			PRINT_HELP_AND_BAIL;
+		}
+
+		if (parser.error) {
 			PRINT_HELP_AND_BAIL;
 		}
 	}
@@ -158,8 +173,12 @@ void CommandLine::printHelp(void) {
 		<< " -p tox_port (bind tox to that port)\n"
 		<< "\n"
 		<< " FT1:\n"
-		<< " TODO\n"
-		<< "\n"
+		<< " --ft_ack_per_packet\n"
+		<< " --ft_init_retry_timeout_after\n"
+		<< " --ft_sending_resend_without_ack_after\n"
+		<< " --ft_sending_give_up_after\n"
+		<< " --ft_packet_window_size\n"
+
 		<< " transfer logic:\n"
 		<< " TODO\n"
 	;

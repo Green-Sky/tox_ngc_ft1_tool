@@ -108,7 +108,7 @@ std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
 			}
 		}
 
-		std::cout << "ReceiveStartSHA1 have " << tmp_have_count << "/" << sha1_info.chunks.size() << "chunks (" << float(tmp_have_count)/sha1_info.chunks.size() << "%)\n";
+		std::cout << "ReceiveStartSHA1 have " << tmp_have_count << "/" << sha1_info.chunks.size() << " chunks (" << float(tmp_have_count)/sha1_info.chunks.size() << "%)\n";
 	}
 
 	std::cout << "ReceiveStartSHA1 switching state to SHA1\n";

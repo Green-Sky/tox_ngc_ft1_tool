@@ -55,11 +55,19 @@ struct CommandLine {
 	// -p port (start and end is set to the same port)
 	uint16_t tox_port {0};
 
-	// ---- TODO ----
-
 	// advanced FT1:
-	// -w packet_window_size
-	// TODO: all them timeouts
+	// --ft_ack_per_packet
+	size_t ft_acks_per_packet {5};
+	// --ft_init_retry_timeout_after
+	float ft_init_retry_timeout_after {10.f};
+	// --ft_sending_resend_without_ack_after
+	float ft_sending_resend_without_ack_after {5.f};
+	// --ft_sending_give_up_after
+	float ft_sending_give_up_after {30.f};
+	// --ft_packet_window_size
+	size_t ft_packet_window_size {5};
+
+	// ---- TODO ----
 
 	// advaced dl:
 	// -I max_incoming_transfers (default 16)
