@@ -178,7 +178,7 @@ void CommandLine::printHelp(void) {
 		<< " --ft_sending_resend_without_ack_after\n"
 		<< " --ft_sending_give_up_after\n"
 		<< " --ft_packet_window_size\n"
-
+		<< "\n"
 		<< " transfer logic:\n"
 		<< " TODO\n"
 	;
