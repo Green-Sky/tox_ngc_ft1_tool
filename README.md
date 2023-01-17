@@ -13,6 +13,7 @@ this will print this tools tox_id and the generated info_hash
 
 this will first download the info using the info_hash and then all the file chunks listed in the info
 while simultaneously resharing allready downloaded chunks and info (swarming)
+to increase the amount of parallel chunk down/up loads, you can increase the value with the -I and -O option. the default for -I is 32 and for -O 16, which are relatively low numbers, which in practice can get you up to ~400KiB/s.
 
 ## Usage
 
@@ -56,5 +57,9 @@ $ tox_ngc_ft1_tool
  --ft_sending_resend_without_ack_after
  --ft_sending_give_up_after
  --ft_packet_window_size
+
+ transfer logic:
+ -I <max_incoming_transfers>
+ -O <max_outgoing_transfers>
 ```
 

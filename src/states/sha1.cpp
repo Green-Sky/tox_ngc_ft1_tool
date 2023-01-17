@@ -269,7 +269,7 @@ void SHA1::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, ui
 		// this transfer is "done" (ft still could have to retransfer)
 		for (auto it = _transfers_requested_info.cbegin(); it != _transfers_requested_info.cend(); it++) {
 			if (std::get<0>(*it) == group_number && std::get<1>(*it) == peer_number && std::get<2>(*it) == transfer_id) {
-				std::cout << "SHA1 info tansfer finished " << std::get<0>(*it) << ":" << std::get<1>(*it) << "." << std::get<2>(*it) << "\n";
+				std::cout << "SHA1 info tansfer finished " << std::get<0>(*it) << ":" << std::get<1>(*it) << "." << int(std::get<2>(*it)) << "\n";
 				_transfers_requested_info.erase(it);
 				break;
 			}
