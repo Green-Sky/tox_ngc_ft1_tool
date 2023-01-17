@@ -4,12 +4,12 @@ currently on prototype FT1
 ## Example
 
 ### sender (seeder)
-$ tox_ngc_ft1_tool -F sender.tox -G <ngc_chat_id> -a sha1_info -f file_to_transfer
+`$ tox_ngc_ft1_tool -F sender.tox -G <ngc_chat_id> -a sha1_info -f file_to_transfer`
 
 this will print this tools tox_id and the generated info_hash
 
 ### receivers (leechers)
-$ tox_ngc_ft1_tool -F sender.tox -G <ngc_chat_id> -a sha1_info -D <info_hash>
+`$ tox_ngc_ft1_tool -F sender.tox -G <ngc_chat_id> -a sha1_info -D <info_hash>`
 
 this will first download the info using the info_hash and then all the file chunks listed in the info
 while simultaneously resharing allready downloaded chunks and info (swarming)

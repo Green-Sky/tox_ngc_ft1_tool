@@ -69,8 +69,8 @@ struct SHA1 final : public StateI {
 		// chunk_index -> time since request
 		std::map<size_t, float> _chunks_requested;
 
-		const size_t _max_concurrent_out {4};
-		const size_t _max_concurrent_in {16};
+		const size_t _max_concurrent_out {16};
+		const size_t _max_concurrent_in {32};
 
 		std::minstd_rand _rng {1337};
 		std::uniform_int_distribution<size_t> _distrib;
