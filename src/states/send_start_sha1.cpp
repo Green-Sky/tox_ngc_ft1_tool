@@ -29,11 +29,12 @@ SendStartSHA1::SendStartSHA1(ToxClient& tcl, const CommandLine& cl) : StateI(tcl
 	// build info
 	_sha1_info.file_name = std::filesystem::path(cl.send_path).filename().string();
 	_sha1_info.file_size = _file_map.length();
+	//_sha1_info.chunk_size;
 
 	{ // build chunks
 		size_t i = 0;
-		for (; i + FTInfoSHA1::chunk_size < _file_map.length(); i += FTInfoSHA1::chunk_size) {
-			_sha1_info.chunks.push_back(hash_sha1(_file_map.data()+i, FTInfoSHA1::chunk_size));
+		for (; i + _sha1_info.chunk_size < _file_map.length(); i += _sha1_info.chunk_size) {
+			_sha1_info.chunks.push_back(hash_sha1(_file_map.data()+i, _sha1_info.chunk_size));
 		}
 
 		if (i < _file_map.length()) {

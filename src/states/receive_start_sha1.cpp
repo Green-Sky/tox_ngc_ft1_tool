@@ -94,8 +94,8 @@ std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
 		std::cout << "ReceiveStartSHA1 checking existing file\n";
 		size_t f_i {0};
 		size_t tmp_have_count {0};
-		for (size_t c_i = 0; f_i + FTInfoSHA1::chunk_size < file_map.length(); f_i += FTInfoSHA1::chunk_size, c_i++) {
-			if (sha1_info.chunks[c_i] == hash_sha1(file_map.data()+f_i, FTInfoSHA1::chunk_size)) {
+		for (size_t c_i = 0; f_i + sha1_info.chunk_size < file_map.length(); f_i += sha1_info.chunk_size, c_i++) {
+			if (sha1_info.chunks[c_i] == hash_sha1(file_map.data()+f_i, sha1_info.chunk_size)) {
 				have_chunk[c_i] = true;
 				tmp_have_count++;
 			}

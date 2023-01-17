@@ -188,7 +188,7 @@ bool SHA1::iterate(float delta) {
 
 	// log
 	_io_log_timer += delta;
-	static const float log_interval {15.f};
+	static const float log_interval {10.f};
 	if (_io_log_timer >= log_interval) {
 		_io_log_timer = 0.f;
 
@@ -203,6 +203,8 @@ bool SHA1::iterate(float delta) {
 
 		std::cout << "SHA1 speed down: " << down_kibs << "KiB/s up: " << up_kibs << "KiB/s\n";
 		std::cout << "SHA1 total down: " << _bytes_down / 1024 << "KiB   up: " << _bytes_up / 1024 << "KiB\n";
+
+		std::cout << "SHA1 cwq:" << _chunk_want_queue.size() << " cwqr:" << _chunks_requested.size() << " trc:" << _transfers_receiving_chunk.size() << " tsc:" << _transfers_sending_chunk.size() << "\n";
 	}
 
 	// TODO: unmap and remap the file every couple of minutes to keep ram usage down?

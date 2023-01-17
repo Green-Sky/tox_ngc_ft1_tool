@@ -4,7 +4,6 @@
 
 #include "./state.hpp"
 
-#include <memory>
 #include <tox/tox.h>
 #include <ngc_ext.h>
 #include <ngc_ft1.h>
@@ -12,6 +11,7 @@
 #include <string>
 #include <string_view>
 #include <map>
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -84,5 +84,6 @@ struct ToxClient {
 
 		// key groupid, value set of peer ids
 		std::map<uint32_t, std::set<uint32_t>> _groups;
+	//	std::map<uint32_t, std::map<uint32_t, Tox_Connection>> _groups;
 };
 
