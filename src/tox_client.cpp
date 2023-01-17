@@ -278,7 +278,7 @@ void ToxClient::onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id) {
 }
 
 void ToxClient::onToxGroupPeerExit(uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type, std::string_view name, std::string_view part_message) {
-	std::cout << "TCL group peer exit " << group_number << ":" << peer_id << "\n";
+	std::cout << "TCL group peer exit " << group_number << ":" << peer_id << " " << name << "\n";
 	_groups[group_number].erase(peer_id);
 	_tox_profile_dirty = true;
 }

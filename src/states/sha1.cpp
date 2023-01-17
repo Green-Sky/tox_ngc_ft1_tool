@@ -182,6 +182,25 @@ bool SHA1::iterate(float delta) {
 		}
 	}
 
+	// log
+	_io_log_timer += delta;
+	static const float log_interval {15.f};
+	if (_io_log_timer >= log_interval) {
+		_io_log_timer = 0.f;
+
+		size_t bytes_up_since {_bytes_up - _bytes_up_last_log};
+		_bytes_up_last_log = _bytes_up;
+
+		size_t bytes_down_since {_bytes_down - _bytes_down_last_log};
+		_bytes_down_last_log = _bytes_down;
+
+		float up_kibs {(bytes_up_since / 1024.f) / log_interval};
+		float down_kibs {(bytes_down_since / 1024.f) / log_interval};
+
+		std::cout << "SHA1 speed down: " << down_kibs << "KiB/s up: " << up_kibs << "KiB/s\n";
+		std::cout << "SHA1 total down: " << _bytes_down / 1024 << "KiB   up: " << _bytes_up / 1024 << "KiB\n";
+	}
+
 	// TODO: unmap and remap the file every couple of minutes to keep ram usage down?
 	// TODO: when to stop?
 	return false;
@@ -324,6 +343,8 @@ void SHA1::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number
 	// check transfers
 	for (auto it =  _transfers_receiving_chunk.begin(); it != _transfers_receiving_chunk.end(); it++) {
 		if (std::get<0>(*it) == group_number && std::get<1>(*it) == peer_number && std::get<2>(*it) == transfer_id) {
+			_bytes_down += data_size;
+
 			std::get<float>(*it) = 0.f; // time
 
 			const size_t chunk_index = std::get<4>(*it);
@@ -364,6 +385,8 @@ void SHA1::onFT1SendDataSHA1Chunk(uint32_t group_number, uint32_t peer_number, u
 	// TODO: sub optimal
 	for (auto it = _transfers_sending_chunk.begin(); it != _transfers_sending_chunk.end(); it++) {
 		if (std::get<0>(*it) == group_number && std::get<1>(*it) == peer_number && std::get<2>(*it) == transfer_id) {
+			_bytes_up += data_size;
+
 			std::get<float>(*it) = 0.f; // time
 
 			const size_t chunk_index = std::get<4>(*it);

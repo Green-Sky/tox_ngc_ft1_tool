@@ -61,6 +61,12 @@ struct SHA1 final : public StateI {
 		const std::vector<uint8_t> _sha1_info_data;
 		const SHA1Digest _sha1_info_hash;
 
+		float _io_log_timer {0.f};
+		size_t _bytes_up {0};
+		size_t _bytes_up_last_log {0};
+		size_t _bytes_down {0};
+		size_t _bytes_down_last_log {0};
+
 		// index is the same as for info
 		std::vector<bool> _have_chunk;
 		bool _have_all {false};
