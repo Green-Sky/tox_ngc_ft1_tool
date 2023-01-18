@@ -197,8 +197,9 @@ ToxClient::~ToxClient(void) {
 }
 
 bool ToxClient::iterate(void) {
-	// HACK: hardcoded 5ms sleep in main
-	float time_delta {0.005f};
+	auto new_time = std::chrono::high_resolution_clock::now();
+	const float time_delta {std::chrono::duration<float>(new_time - _last_time).count()};
+	_last_time = new_time;
 
 	tox_iterate(_tox, this);
 	NGC_FT1_iterate(_tox, _ft1_ctx, time_delta);

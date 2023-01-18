@@ -110,7 +110,7 @@ bool SHA1::iterate(float delta) {
 			float& timer = std::get<float>(*it);
 			timer += delta;
 
-			if (timer >= 15.f) {
+			if (timer >= 10.f) {
 				it = _queue_requested_chunk.erase(it);
 			} else {
 				it++;
@@ -257,7 +257,7 @@ bool SHA1::onFT1ReceiveInitSHA1Info(uint32_t, uint32_t, const uint8_t*, size_t, 
 
 void SHA1::onFT1ReceiveDataSHA1Info(uint32_t, uint32_t, uint8_t, size_t, const uint8_t*, size_t) {
 	// no, in this state we have init
-	assert(false && "ft should have said dropped this for us!");
+	assert(false && "ft should have dropped this for us!");
 }
 
 void SHA1::onFT1SendDataSHA1Info(uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size) {

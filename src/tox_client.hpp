@@ -8,6 +8,7 @@
 #include <ngc_ext.h>
 #include <ngc_ft1.h>
 
+#include <chrono>
 #include <string>
 #include <string_view>
 #include <map>
@@ -72,6 +73,8 @@ struct ToxClient {
 		Tox* _tox {nullptr};
 		NGC_EXT_CTX* _ext_ctx {nullptr};
 		NGC_FT1* _ft1_ctx {nullptr};
+
+		std::chrono::time_point<std::chrono::high_resolution_clock> _last_time {std::chrono::high_resolution_clock::now()};
 
 		std::string _self_name;
 
