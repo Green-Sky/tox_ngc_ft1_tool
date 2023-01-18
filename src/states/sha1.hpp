@@ -91,7 +91,7 @@ struct SHA1 final : public StateI {
 		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float>> _transfers_requested_info;
 
 		// group_number, peer_number, chunk_hash
-		std::deque<std::tuple<uint32_t, uint32_t, SHA1Digest>> _queue_requested_chunk;
+		std::deque<std::tuple<uint32_t, uint32_t, SHA1Digest, float>> _queue_requested_chunk;
 
 		// group_number, peer_number, transfer_id(i/o), seconds since (remote) activity, chunk index
 		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float, size_t>> _transfers_sending_chunk;

@@ -104,6 +104,18 @@ bool SHA1::iterate(float delta) {
 				it++;
 			}
 		}
+
+		// queued requests
+		for (auto it = _queue_requested_chunk.begin(); it != _queue_requested_chunk.end();) {
+			float& timer = std::get<float>(*it);
+			timer += delta;
+
+			if (timer >= 15.f) {
+				it = _queue_requested_chunk.erase(it);
+			} else {
+				it++;
+			}
+		}
 	}
 
 	// if we have not reached the total cap for transfers
@@ -117,45 +129,45 @@ bool SHA1::iterate(float delta) {
 
 			uint8_t transfer_id {0};
 
-			_tcl.sendFT1InitPrivate(
+			if (_tcl.sendFT1InitPrivate(
 				group_number, peer_number,
 				NGC_FT1_file_kind::HASH_SHA1_INFO,
 				_sha1_info_hash.data.data(), _sha1_info_hash.size(), // id (info hash)
 				_sha1_info_data.size(), // "file_size"
 				transfer_id
-			);
+			)) {
+				_transfers_requested_info.push_back({
+					group_number, peer_number,
+					transfer_id,
+					0.f
+				});
 
-			_transfers_requested_info.push_back({
-				group_number, peer_number,
-				transfer_id,
-				0.f
-			});
-
-			_queue_requested_info.pop_front();
+				_queue_requested_info.pop_front();
+			}
 		} else if (!_queue_requested_chunk.empty()) { // then check for chunk requests
-			const auto [group_number, peer_number, chunk_hash] = _queue_requested_chunk.front();
+			const auto [group_number, peer_number, chunk_hash, _] = _queue_requested_chunk.front();
 
 			size_t chunk_index = chunkIndex(chunk_hash).value();
 			size_t chunk_file_size = chunkSize(chunk_index);
 
 			uint8_t transfer_id {0};
 
-			_tcl.sendFT1InitPrivate(
+			if (_tcl.sendFT1InitPrivate(
 				group_number, peer_number,
 				NGC_FT1_file_kind::HASH_SHA1_CHUNK,
 				chunk_hash.data.data(), chunk_hash.size(), // id (chunk hash)
 				chunk_file_size,
 				transfer_id
-			);
+			)) {
+				_transfers_sending_chunk.push_back({
+					group_number, peer_number,
+					transfer_id,
+					0.f,
+					chunk_index
+				});
 
-			_transfers_sending_chunk.push_back({
-				group_number, peer_number,
-				transfer_id,
-				0.f,
-				chunk_index
-			});
-
-			_queue_requested_chunk.pop_front();
+				_queue_requested_chunk.pop_front();
+			}
 		}
 	}
 
@@ -438,15 +450,17 @@ void SHA1::queueUpRequestInfo(uint32_t group_number, uint32_t peer_number) {
 void SHA1::queueUpRequestChunk(uint32_t group_number, uint32_t peer_number, const SHA1Digest& hash) {
 	// TODO: transfers
 
-	for (auto& [i_g, i_p, i_h] : _queue_requested_chunk) {
+	for (auto& [i_g, i_p, i_h, i_t] : _queue_requested_chunk) {
 		// if already in queue
 		if (i_g == group_number && i_p == peer_number && i_h == hash) {
+			// update timer
+			i_t = 0.f;
 			return;
 		}
 	}
 
 	// not in queue yet
-	_queue_requested_chunk.push_back(std::make_tuple(group_number, peer_number, hash));
+	_queue_requested_chunk.push_back(std::make_tuple(group_number, peer_number, hash, 0.f));
 }
 
 std::optional<size_t> SHA1::chunkIndex(const SHA1Digest& hash) const {
