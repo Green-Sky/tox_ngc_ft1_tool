@@ -13,7 +13,7 @@ this will print this tools tox_id and the generated info_hash
 
 this will first download the info using the info_hash and then all the file chunks listed in the info
 while simultaneously resharing allready downloaded chunks and info (swarming)
-to increase the amount of parallel chunk down/up loads, you can increase the value with the -I and -O option. the default for -I is 32 and for -O 16, which are relatively low numbers, which in practice can get you up to ~400KiB/s.
+to increase the amount of parallel chunk down/up loads, you can increase the value with the -I and -O option. the default for -I is 32 and for -O 16, which are relatively low numbers, which in practice can get you up to ~700KiB/s.
 
 ## Usage
 
