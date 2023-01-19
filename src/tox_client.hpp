@@ -43,8 +43,8 @@ struct ToxClient {
 		template<typename FN>
 		void forEachGroupPeer(uint32_t group_number, FN&& fn) const {
 			if (_groups.count(group_number)) {
-				for (const uint32_t peer_number : _groups.at(group_number)) {
-					fn(peer_number);
+				for (const auto [peer_number, connection_status] : _groups.at(group_number)) {
+					fn(peer_number, connection_status);
 				}
 			}
 		}
@@ -63,8 +63,8 @@ struct ToxClient {
 		StateI& getState(void); // public accessor for callbacks
 
 	public: // FT1 sends
-		bool sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size);
-		bool sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id);
+		bool sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_number, uint32_t file_kind, const uint8_t* file_id, size_t file_id_size);
+		bool sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, uint32_t file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id);
 
 	private:
 		void saveToxProfile(void);
@@ -86,7 +86,7 @@ struct ToxClient {
 		std::unique_ptr<StateI> _state;
 
 		// key groupid, value set of peer ids
-		std::map<uint32_t, std::set<uint32_t>> _groups;
-	//	std::map<uint32_t, std::map<uint32_t, Tox_Connection>> _groups;
+		//std::map<uint32_t, std::set<uint32_t>> _groups;
+		std::map<uint32_t, std::map<uint32_t, Tox_Connection>> _groups;
 };
 

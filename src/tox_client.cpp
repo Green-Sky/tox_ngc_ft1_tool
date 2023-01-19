@@ -274,8 +274,8 @@ void ToxClient::onToxGroupInvite(uint32_t friend_number, const uint8_t* invite_d
 
 void ToxClient::onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id) {
 	std::cout << "TCL group peer join " << group_number << ":" << peer_id << "\n";
-	_groups[group_number].emplace(peer_id);
-	//_groups[group_number][peer_id] = tox_group_peer_get_connection_status(_tox, group_number, peer_id, nullptr);
+	//_groups[group_number].emplace(peer_id);
+	_groups[group_number][peer_id] = tox_group_peer_get_connection_status(_tox, group_number, peer_id, nullptr);
 	_tox_profile_dirty = true;
 }
 
@@ -298,7 +298,7 @@ StateI& ToxClient::getState(void) {
 	return *_state.get();
 }
 
-bool ToxClient::sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size) {
+bool ToxClient::sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_number, uint32_t file_kind, const uint8_t* file_id, size_t file_id_size) {
 	NGC_FT1_send_request_private(
 		_tox, _ft1_ctx,
 		group_number, peer_number,
@@ -310,7 +310,7 @@ bool ToxClient::sendFT1RequestPrivate(uint32_t group_number, uint32_t peer_numbe
 	return true;
 }
 
-bool ToxClient::sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, NGC_FT1_file_kind file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id) {
+bool ToxClient::sendFT1InitPrivate(uint32_t group_number, uint32_t peer_number, uint32_t file_kind, const uint8_t* file_id, size_t file_id_size, uint64_t file_size, uint8_t& transfer_id) {
 	return NGC_FT1_send_init_private(
 		_tox, _ft1_ctx,
 		group_number, peer_number,

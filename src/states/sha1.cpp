@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <tuple>
+#include <random>
 
 namespace States {
 
@@ -174,27 +175,46 @@ bool SHA1::iterate(float delta) {
 	if (!_have_all && !_chunk_want_queue.empty() && _chunks_requested.size() + _transfers_receiving_chunk.size() < _max_concurrent_in) {
 		// send out request, no burst tho
 		std::vector<std::pair<uint32_t, uint32_t>> target_peers;
-		_tcl.forEachGroup([&target_peers, this](uint32_t group_number) {
-			_tcl.forEachGroupPeer(group_number, [&target_peers, group_number](uint32_t peer_number) {
-				target_peers.push_back({group_number, peer_number});
+		std::vector<std::pair<uint32_t, uint32_t>> target_peers_tcp;
+		_tcl.forEachGroup([&target_peers, &target_peers_tcp, this](uint32_t group_number) {
+			_tcl.forEachGroupPeer(group_number, [&target_peers, &target_peers_tcp, group_number](uint32_t peer_number, Tox_Connection connection_status) {
+				if (connection_status == Tox_Connection::TOX_CONNECTION_UDP) {
+					target_peers.push_back({group_number, peer_number});
+				} else {
+					target_peers_tcp.push_back({group_number, peer_number});
+				}
 			});
 		});
 
-		if (!target_peers.empty()) {
-			//if (_distrib.max() != target_peers.size()) {
-				//std::uniform_int_distribution<size_t> new_dist{0, target_peers.size()-1};
-				//_distrib.param(new_dist.param());
-			//}
+		if (!(target_peers.empty() && target_peers_tcp.empty())) {
+			uint32_t group_number;
+			uint32_t peer_number;
 
-			//size_t target_index = _distrib(_rng);
-			size_t target_index = _rng()%target_peers.size();
-			auto [group_number, peer_number] = target_peers.at(target_index);
+			if (!target_peers.empty() && !target_peers_tcp.empty()) { // have udp & tcp peers
+				// 75% chance to roll udp over tcp
+				if (std::generate_canonical<float, 10>(_rng) >= 0.25f) {
+					//std::cout << "rolled upd\n";
+					size_t target_index = _rng()%target_peers.size();
+					std::tie(group_number, peer_number) = target_peers.at(target_index);
+				} else { // tcp
+					//std::cout << "rolled tcp\n";
+					size_t target_index = _rng()%target_peers_tcp.size();
+					std::tie(group_number, peer_number) = target_peers_tcp.at(target_index);
+				}
+			} else if (!target_peers.empty()) { // udp
+				size_t target_index = _rng()%target_peers.size();
+				std::tie(group_number, peer_number) = target_peers.at(target_index);
+			} else { // tcp
+				size_t target_index = _rng()%target_peers_tcp.size();
+				std::tie(group_number, peer_number) = target_peers_tcp.at(target_index);
+			}
 
 			size_t chunk_index = _chunk_want_queue.front();
 			_chunks_requested[chunk_index] = 0.f;
 			_chunk_want_queue.pop_front();
 
 			_tcl.sendFT1RequestPrivate(group_number, peer_number, NGC_FT1_file_kind::HASH_SHA1_CHUNK, _sha1_info.chunks[chunk_index].data.data(), 20);
+			//std::cout << "sent request " << group_number << ":" << peer_number << "\n";
 		}
 	}
 

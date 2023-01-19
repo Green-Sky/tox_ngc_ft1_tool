@@ -50,13 +50,13 @@ bool ReceiveStartSHA1::iterate(float delta) {
 		// TODO: select random and try, not blas
 		// ... and we are blasing
 		_tcl.forEachGroup([this](const uint32_t group_number) {
-			_tcl.forEachGroupPeer(group_number, [this, group_number](uint32_t peer_number) {
+			_tcl.forEachGroupPeer(group_number, [this, group_number](uint32_t peer_number, Tox_Connection connection_status) {
 				_tcl.sendFT1RequestPrivate(
 					group_number, peer_number,
 					NGC_FT1_file_kind::HASH_SHA1_INFO,
 					_sha1_info_hash.data.data(), _sha1_info_hash.size()
 				);
-				std::cout << "ReceiveStartSHA1 sendig info request to " << group_number << ":" << peer_number << "\n";
+				std::cout << "ReceiveStartSHA1 sendig info request to " << group_number << ":" << peer_number << " over " << (connection_status == Tox_Connection::TOX_CONNECTION_TCP ? "tcp" : "udp")  <<"\n";
 			});
 		});
 	}
@@ -108,7 +108,7 @@ std::unique_ptr<StateI> ReceiveStartSHA1::nextState(void) {
 			}
 		}
 
-		std::cout << "ReceiveStartSHA1 have " << tmp_have_count << "/" << sha1_info.chunks.size() << " chunks (" << float(tmp_have_count)/sha1_info.chunks.size() << "%)\n";
+		std::cout << "ReceiveStartSHA1 have " << tmp_have_count << "/" << sha1_info.chunks.size() << " chunks (" << float(tmp_have_count)/sha1_info.chunks.size() * 100.f << "%)\n";
 	}
 
 	std::cout << "ReceiveStartSHA1 switching state to SHA1\n";
@@ -149,7 +149,7 @@ bool ReceiveStartSHA1::onFT1ReceiveInitSHA1Info(uint32_t group_number, uint32_t 
 	_sha1_info_data.resize(file_size);
 
 	_transfer = std::make_tuple(group_number, peer_number, transfer_id, 0.f);
-	std::cout << "ReceiveStartSHA1 accepted info transfer" << group_number << ":" << peer_number << "." << int(transfer_id) << "\n";
+	std::cout << "ReceiveStartSHA1 accepted info transfer " << group_number << ":" << peer_number << "." << int(transfer_id) << "\n";
 
 	// accept
 	return true;
