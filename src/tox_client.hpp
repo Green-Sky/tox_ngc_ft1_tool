@@ -34,6 +34,7 @@ struct ToxClient {
 		std::string getOwnAddress(void) const;
 
 		std::string_view getGroupPeerName(uint32_t group_number, uint32_t peer_number) const;
+		TOX_CONNECTION getGroupPeerConnectionStatus(uint32_t group_number, uint32_t peer_number) const;
 
 		template<typename FN>
 		void forEachGroup(FN&& fn) const {
@@ -46,8 +47,7 @@ struct ToxClient {
 		void forEachGroupPeer(uint32_t group_number, FN&& fn) const {
 			if (_groups.count(group_number)) {
 				for (const auto& [peer_number, peer] : _groups.at(group_number)) {
-					const auto& [connection_status, name] = peer;
-					fn(peer_number, connection_status);
+					fn(peer_number);
 				}
 			}
 		}
@@ -56,7 +56,7 @@ struct ToxClient {
 		void onToxSelfConnectionStatus(TOX_CONNECTION connection_status);
 		void onToxFriendRequest(const uint8_t* public_key, std::string_view message);
 		void onToxGroupPeerName(uint32_t group_number, uint32_t peer_id, std::string_view name);
-		void onToxGroupPeerConnection(uint32_t group_number, uint32_t peer_id, TOX_CONNECTION connection_status);
+		//void onToxGroupPeerConnection(uint32_t group_number, uint32_t peer_id, TOX_CONNECTION connection_status);
 		void onToxGroupCustomPacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length);
 		void onToxGroupCustomPrivatePacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length);
 		void onToxGroupInvite(uint32_t friend_number, const uint8_t* invite_data, size_t invite_length, std::string_view group_name);
@@ -90,12 +90,10 @@ struct ToxClient {
 
 		std::unique_ptr<StateI> _state;
 
-		// key groupid, value set of peer ids
-		//std::map<uint32_t, std::set<uint32_t>> _groups;
 		struct Peer {
-			Tox_Connection connection_status {Tox_Connection::TOX_CONNECTION_NONE};
 			std::string name;
 		};
+		// key groupid, key peerid
 		std::map<uint32_t, std::map<uint32_t, Peer>> _groups;
 };
 

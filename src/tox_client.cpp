@@ -238,6 +238,10 @@ std::string_view ToxClient::getGroupPeerName(uint32_t group_number, uint32_t pee
 	}
 }
 
+TOX_CONNECTION ToxClient::getGroupPeerConnectionStatus(uint32_t group_number, uint32_t peer_number) const {
+	return tox_group_peer_get_connection_status(_tox, group_number, peer_number, nullptr);
+}
+
 void ToxClient::onToxSelfConnectionStatus(TOX_CONNECTION connection_status) {
 	std::cout << "TCL self status: ";
 	switch (connection_status) {
@@ -269,14 +273,14 @@ void ToxClient::onToxGroupPeerName(uint32_t group_number, uint32_t peer_id, std:
 	_groups[group_number][peer_id].name = name;
 }
 
-void ToxClient::onToxGroupPeerConnection(uint32_t group_number, uint32_t peer_id, TOX_CONNECTION connection_status) {
-	std::cout << "TCL peer " << group_number << ":" << peer_id << " status: ";
-	switch (connection_status) {
-		case TOX_CONNECTION::TOX_CONNECTION_NONE: std::cout << "offline\n"; break;
-		case TOX_CONNECTION::TOX_CONNECTION_TCP: std::cout << "TCP-relayed\n"; break;
-		case TOX_CONNECTION::TOX_CONNECTION_UDP: std::cout << "UDP-direct\n"; break;
-	}
-}
+//void ToxClient::onToxGroupPeerConnection(uint32_t group_number, uint32_t peer_id, TOX_CONNECTION connection_status) {
+	//std::cout << "TCL peer " << group_number << ":" << peer_id << " status: ";
+	//switch (connection_status) {
+		//case TOX_CONNECTION::TOX_CONNECTION_NONE: std::cout << "offline\n"; break;
+		//case TOX_CONNECTION::TOX_CONNECTION_TCP: std::cout << "TCP-relayed\n"; break;
+		//case TOX_CONNECTION::TOX_CONNECTION_UDP: std::cout << "UDP-direct\n"; break;
+	//}
+//}
 
 void ToxClient::onToxGroupCustomPacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length) {
 	// TODO: signal private?
@@ -310,7 +314,7 @@ void ToxClient::onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id) {
 	tmp_name.push_back('\0'); // make sure its null terminated
 
 	_groups[group_number][peer_id] = {
-		tox_group_peer_get_connection_status(_tox, group_number, peer_id, nullptr),
+		//tox_group_peer_get_connection_status(_tox, group_number, peer_id, nullptr),
 		reinterpret_cast<const char*>(tmp_name.data())
 	};
 

@@ -47,22 +47,25 @@ bool ReceiveStartSHA1::iterate(float delta) {
 		}
 	} else if (_time_since_last_request >= 15.f) { // blast ever 15sec
 		_time_since_last_request = 0.f;
-		// TODO: select random and try, not blas
-		// ... and we are blasing
+
 		_tcl.forEachGroup([this](const uint32_t group_number) {
-			_tcl.forEachGroupPeer(group_number, [this, group_number](uint32_t peer_number, Tox_Connection connection_status) {
+			_tcl.forEachGroupPeer(group_number, [this, group_number](uint32_t peer_number) {
 				_tcl.sendFT1RequestPrivate(
 					group_number, peer_number,
 					NGC_FT1_file_kind::HASH_SHA1_INFO,
 					_sha1_info_hash.data.data(), _sha1_info_hash.size()
 				);
-				std::cout << "ReceiveStartSHA1 sendig info request to " << group_number << ":" << peer_number << " over " << (connection_status == Tox_Connection::TOX_CONNECTION_TCP ? "tcp" : "udp")  <<"\n";
+				std::cout
+					<< "ReceiveStartSHA1 sendig info request to "
+					<< group_number << ":" << peer_number
+					<< " over " << (_tcl.getGroupPeerConnectionStatus(group_number, peer_number) == Tox_Connection::TOX_CONNECTION_TCP ? "tcp" : "udp")
+					<< "\n"
+				;
 			});
 		});
 	}
 
 	// if not transfer, request from random peer (equal dist!!)
-	// TODO: return true if done
 	return _done;
 }
 

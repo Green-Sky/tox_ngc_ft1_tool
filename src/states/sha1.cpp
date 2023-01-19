@@ -30,6 +30,7 @@ SHA1::SHA1(
 {
 	assert(_have_chunk.size() == _sha1_info.chunks.size());
 
+	_udp_only = cl.request_only_from_udp_peer;
 	_max_concurrent_in = cl.max_incoming_transfers;
 	_max_concurrent_out = cl.max_incoming_transfers;
 
@@ -194,10 +195,19 @@ bool SHA1::iterate(float delta) {
 		_peer_speed_mesurement_interval_timer = 0.f; // we lose some time here, but precision is not the issue
 
 		_peer_in_bytes_array_index = (_peer_in_bytes_array_index + 1) % _peer_speed_mesurement_interval_count;
-		for (const auto& [peer, array] : _peer_in_bytes_array) {
+		//for (const auto& [peer, array] : _peer_in_bytes_array) {
+		for (auto it = _peer_in_bytes_array.begin(); it != _peer_in_bytes_array.end();) {
+			const auto& [peer, array] = *it;
+
 			float avg {0.f};
 			for (size_t i = 0; i < array.size(); i++) {
 				avg += array[i];
+			}
+
+			if (avg == 0.f || _tcl.getGroupPeerConnectionStatus(peer.first, peer.second) == Tox_Connection::TOX_CONNECTION_NONE) {
+				_peer_in_speed.erase(peer);
+				it = _peer_in_bytes_array.erase(it);
+				continue;
 			}
 
 			// if 6 mesurment every 0.5sec -> avg is over 3sec -> /3 for /s
@@ -207,12 +217,14 @@ bool SHA1::iterate(float delta) {
 			_peer_in_bytes_array[peer][_peer_in_bytes_array_index] = 0;
 
 			_peer_in_speed[peer] = avg;
+
+			it++;
 		}
 
 		_peer_in_targets.clear();
 		_tcl.forEachGroup([this](uint32_t group_number) {
-			_tcl.forEachGroupPeer(group_number, [group_number, this](uint32_t peer_number, Tox_Connection connection_status) {
-				if (connection_status == Tox_Connection::TOX_CONNECTION_UDP || !_udp_only) {
+			_tcl.forEachGroupPeer(group_number, [group_number, this](uint32_t peer_number) {
+				if (!_udp_only || _tcl.getGroupPeerConnectionStatus(group_number, peer_number) == Tox_Connection::TOX_CONNECTION_UDP) {
 					_peer_in_targets.push_back({group_number, peer_number});
 				}
 			});
@@ -278,7 +290,12 @@ bool SHA1::iterate(float delta) {
 		std::cout << "SHA1 cwq:" << _chunk_want_queue.size() << " cwqr:" << _chunks_requested.size() << " trc:" << _transfers_receiving_chunk.size() << " tsc:" << _transfers_sending_chunk.size() << "\n";
 		std::cout << "SHA1 peer down speeds:\n";
 		for (const auto& [peer, speed] : _peer_in_speed) {
-			std::cout << "    " << peer.first << ":" << peer.second << "(" << _tcl.getGroupPeerName(peer.first, peer.second) << ")" << "\t" << speed / 1024.f << "KiB/s\n";
+			std::cout
+				<< "    " << peer.first << ":" << peer.second
+				<< " " << (_tcl.getGroupPeerConnectionStatus(peer.first, peer.second) == Tox_Connection::TOX_CONNECTION_TCP ? "tcp" : "udp")
+				<< " (" << _tcl.getGroupPeerName(peer.first, peer.second) << ")"
+				<< "    " << speed / 1024.f << "KiB/s\n"
+			;
 		}
 	}
 

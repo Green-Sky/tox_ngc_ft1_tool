@@ -57,9 +57,13 @@ struct SHA1 final : public StateI {
 		size_t chunkSize(size_t chunk_index) const;
 		bool haveChunk(const SHA1Digest& hash) const;
 
-	private:
+	public: // config
 		bool _udp_only {false};
 
+		size_t _max_concurrent_in {32};
+		size_t _max_concurrent_out {16};
+
+	private:
 		mio::mmap_sink _file_map; // writable if not all
 		const FTInfoSHA1 _sha1_info;
 		const std::vector<uint8_t> _sha1_info_data;
@@ -79,11 +83,7 @@ struct SHA1 final : public StateI {
 		// chunk_index -> time since request
 		std::map<size_t, float> _chunks_requested;
 
-		size_t _max_concurrent_in {32};
-		size_t _max_concurrent_out {16};
-
 		std::minstd_rand _rng {1337};
-		std::uniform_int_distribution<size_t> _distrib;
 
 		std::unordered_map<SHA1Digest, size_t> _chunk_hash_to_index;
 
@@ -114,7 +114,6 @@ struct SHA1 final : public StateI {
 		// _peer_in_speed feeds directly into _peer_in_targets_dist
 		std::vector<std::pair<uint32_t, uint32_t>> _peer_in_targets;
 		std::discrete_distribution<size_t> _peer_in_targets_dist;
-
 };
 
 } // States
