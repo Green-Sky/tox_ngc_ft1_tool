@@ -21,6 +21,11 @@ void self_connection_status_cb(Tox*, TOX_CONNECTION connection_status, void *use
 void friend_request_cb(Tox*, const uint8_t *public_key, const uint8_t *message, size_t length, void *user_data) {
 	static_cast<ToxClient*>(user_data)->onToxFriendRequest(public_key, std::string_view{reinterpret_cast<const char*>(message), length});
 }
+
+void group_peer_name_cb(Tox*, uint32_t group_number, uint32_t peer_id, const uint8_t* name, size_t length, void *user_data) {
+	static_cast<ToxClient*>(user_data)->onToxGroupPeerName(group_number, peer_id, std::string_view{reinterpret_cast<const char*>(name), length});
+}
+
 void group_custom_packet_cb(Tox*, uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length, void *user_data) {
 	static_cast<ToxClient*>(user_data)->onToxGroupCustomPacket(group_number, peer_id, data, length);
 }

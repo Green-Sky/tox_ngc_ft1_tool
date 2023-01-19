@@ -4,6 +4,7 @@
 
 #include "../hash_utils.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <tuple>
 #include <random>
@@ -32,6 +33,12 @@ SHA1::SHA1(
 	_max_concurrent_in = cl.max_incoming_transfers;
 	_max_concurrent_out = cl.max_incoming_transfers;
 
+	// build lookup table
+	for (size_t i = _sha1_info.chunks.size(); i > 0; i--) {
+		// chunks can have more then 1 index ..., for now, build reverse and have the first index be the real index
+		_chunk_hash_to_index[_sha1_info.chunks.at(i-1)] = i-1;
+	}
+
 	_have_all = true;
 	_have_count = 0;
 	for (size_t i = 0; i < _have_chunk.size(); i++) {
@@ -39,15 +46,24 @@ SHA1::SHA1(
 			_have_count++;
 		} else {
 			_have_all = false;
-			_chunk_want_queue.push_back(i);
+
+			// avoid same chunk hash dups
+			if (_chunk_hash_to_index.at(_sha1_info.chunks.at(i)) == i) {
+				_chunk_want_queue.push_back(i);
+			}
 		}
 	}
 
-	// if not sequential, shuffle _chunk_want_queue
+	if (!_have_all) {
+		assert(_chunk_want_queue.size() > 0);
 
-	// build lookup table
-	for (size_t i = 0; i < _sha1_info.chunks.size(); i++) {
-		_chunk_hash_to_index[_sha1_info.chunks[i]] = i;
+		{ // load last chunk first :)
+			size_t tmp = _chunk_want_queue.back();
+			_chunk_want_queue.push_front(tmp);
+			_chunk_want_queue.pop_back();
+		}
+
+		// if not sequential, shuffle _chunk_want_queue
 	}
 }
 
@@ -172,50 +188,73 @@ bool SHA1::iterate(float delta) {
 		}
 	}
 
-	if (!_have_all && !_chunk_want_queue.empty() && _chunks_requested.size() + _transfers_receiving_chunk.size() < _max_concurrent_in) {
-		// send out request, no burst tho
-		std::vector<std::pair<uint32_t, uint32_t>> target_peers;
-		std::vector<std::pair<uint32_t, uint32_t>> target_peers_tcp;
-		_tcl.forEachGroup([&target_peers, &target_peers_tcp, this](uint32_t group_number) {
-			_tcl.forEachGroupPeer(group_number, [&target_peers, &target_peers_tcp, group_number](uint32_t peer_number, Tox_Connection connection_status) {
-				if (connection_status == Tox_Connection::TOX_CONNECTION_UDP) {
-					target_peers.push_back({group_number, peer_number});
-				} else {
-					target_peers_tcp.push_back({group_number, peer_number});
+	// update speeds and targets
+	_peer_speed_mesurement_interval_timer += delta;
+	if (_peer_speed_mesurement_interval_timer >= _peer_speed_mesurement_interval) {
+		_peer_speed_mesurement_interval_timer = 0.f; // we lose some time here, but precision is not the issue
+
+		_peer_in_bytes_array_index = (_peer_in_bytes_array_index + 1) % _peer_speed_mesurement_interval_count;
+		for (const auto& [peer, array] : _peer_in_bytes_array) {
+			float avg {0.f};
+			for (size_t i = 0; i < array.size(); i++) {
+				avg += array[i];
+			}
+
+			// if 6 mesurment every 0.5sec -> avg is over 3sec -> /3 for /s
+			avg /= _peer_speed_mesurement_interval * _peer_speed_mesurement_interval_count;
+
+			// reset byte count for next round
+			_peer_in_bytes_array[peer][_peer_in_bytes_array_index] = 0;
+
+			_peer_in_speed[peer] = avg;
+		}
+
+		_peer_in_targets.clear();
+		_tcl.forEachGroup([this](uint32_t group_number) {
+			_tcl.forEachGroupPeer(group_number, [group_number, this](uint32_t peer_number, Tox_Connection connection_status) {
+				if (connection_status == Tox_Connection::TOX_CONNECTION_UDP || !_udp_only) {
+					_peer_in_targets.push_back({group_number, peer_number});
 				}
 			});
 		});
 
-		if (!(target_peers.empty() && target_peers_tcp.empty())) {
-			uint32_t group_number;
-			uint32_t peer_number;
-
-			if (!target_peers.empty() && !target_peers_tcp.empty()) { // have udp & tcp peers
-				// 75% chance to roll udp over tcp
-				if (std::generate_canonical<float, 10>(_rng) >= 0.25f) {
-					//std::cout << "rolled upd\n";
-					size_t target_index = _rng()%target_peers.size();
-					std::tie(group_number, peer_number) = target_peers.at(target_index);
-				} else { // tcp
-					//std::cout << "rolled tcp\n";
-					size_t target_index = _rng()%target_peers_tcp.size();
-					std::tie(group_number, peer_number) = target_peers_tcp.at(target_index);
+		if (!_peer_in_targets.empty()) {
+			std::vector<double> weights;
+			for (const auto& peer : _peer_in_targets) {
+				if (_peer_in_speed.count(peer)) {
+					weights.push_back(
+						std::clamp(
+							(_peer_in_speed.at(peer) / 1024.f) // KiB/s
+							* (20.f/500.f), // map to a range from 0 to 20, max at 500KiB/s
+							1.f,
+							20.f
+						)
+					);
+				} else {
+					weights.push_back(1.f);
 				}
-			} else if (!target_peers.empty()) { // udp
-				size_t target_index = _rng()%target_peers.size();
-				std::tie(group_number, peer_number) = target_peers.at(target_index);
-			} else { // tcp
-				size_t target_index = _rng()%target_peers_tcp.size();
-				std::tie(group_number, peer_number) = target_peers_tcp.at(target_index);
 			}
 
-			size_t chunk_index = _chunk_want_queue.front();
-			_chunks_requested[chunk_index] = 0.f;
-			_chunk_want_queue.pop_front();
-
-			_tcl.sendFT1RequestPrivate(group_number, peer_number, NGC_FT1_file_kind::HASH_SHA1_CHUNK, _sha1_info.chunks[chunk_index].data.data(), 20);
-			//std::cout << "sent request " << group_number << ":" << peer_number << "\n";
+			std::discrete_distribution<size_t> tmp_dist{weights.cbegin(), weights.cend()};
+			_peer_in_targets_dist.param(tmp_dist.param());
 		}
+	}
+
+	if (!_have_all && !_peer_in_targets.empty() && !_chunk_want_queue.empty() && _chunks_requested.size() + _transfers_receiving_chunk.size() < _max_concurrent_in) {
+		// send out request, no burst tho
+		uint32_t group_number;
+		uint32_t peer_number;
+
+		//size_t target_index = _rng()%target_peers.size();
+		size_t target_index = _peer_in_targets_dist(_rng);
+		std::tie(group_number, peer_number) = _peer_in_targets.at(target_index);
+
+		size_t chunk_index = _chunk_want_queue.front();
+		_chunks_requested[chunk_index] = 0.f;
+		_chunk_want_queue.pop_front();
+
+		_tcl.sendFT1RequestPrivate(group_number, peer_number, NGC_FT1_file_kind::HASH_SHA1_CHUNK, _sha1_info.chunks[chunk_index].data.data(), 20);
+		//std::cout << "sent request " << group_number << ":" << peer_number << "\n";
 	}
 
 	// log
@@ -237,6 +276,10 @@ bool SHA1::iterate(float delta) {
 		std::cout << "SHA1 total down: " << _bytes_down / 1024 << "KiB   up: " << _bytes_up / 1024 << "KiB\n";
 
 		std::cout << "SHA1 cwq:" << _chunk_want_queue.size() << " cwqr:" << _chunks_requested.size() << " trc:" << _transfers_receiving_chunk.size() << " tsc:" << _transfers_sending_chunk.size() << "\n";
+		std::cout << "SHA1 peer down speeds:\n";
+		for (const auto& [peer, speed] : _peer_in_speed) {
+			std::cout << "    " << peer.first << ":" << peer.second << "(" << _tcl.getGroupPeerName(peer.first, peer.second) << ")" << "\t" << speed / 1024.f << "KiB/s\n";
+		}
 	}
 
 	// TODO: unmap and remap the file every couple of minutes to keep ram usage down?
@@ -383,6 +426,8 @@ void SHA1::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number
 		if (std::get<0>(*it) == group_number && std::get<1>(*it) == peer_number && std::get<2>(*it) == transfer_id) {
 			_bytes_down += data_size;
 
+			_peer_in_bytes_array[std::make_pair(group_number, peer_number)][_peer_in_bytes_array_index] += data_size;
+
 			std::get<float>(*it) = 0.f; // time
 
 			const size_t chunk_index = std::get<4>(*it);
@@ -402,6 +447,7 @@ void SHA1::onFT1ReceiveDataSHA1Chunk(uint32_t group_number, uint32_t peer_number
 				SHA1Digest test_hash = hash_sha1(_file_map.data()+file_offset, chunk_file_size);
 				if (test_hash != _sha1_info.chunks[chunk_index]) {
 					std::cerr << "SHA1 received chunks's hash does not match!, discarding\n";
+					_bytes_down -= chunk_file_size; // penalize wrong data
 					_transfers_receiving_chunk.erase(it);
 					_chunk_want_queue.push_front(chunk_index); // put back in queue
 					break;

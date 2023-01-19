@@ -58,6 +58,8 @@ struct SHA1 final : public StateI {
 		bool haveChunk(const SHA1Digest& hash) const;
 
 	private:
+		bool _udp_only {false};
+
 		mio::mmap_sink _file_map; // writable if not all
 		const FTInfoSHA1 _sha1_info;
 		const std::vector<uint8_t> _sha1_info_data;
@@ -96,6 +98,23 @@ struct SHA1 final : public StateI {
 		// group_number, peer_number, transfer_id(i/o), seconds since (remote) activity, chunk index
 		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float, size_t>> _transfers_sending_chunk;
 		std::vector<std::tuple<uint32_t, uint32_t, uint8_t, float, size_t>> _transfers_receiving_chunk;
+
+		static constexpr size_t _peer_speed_mesurement_interval_count {20};
+		const float _peer_speed_mesurement_interval {0.5f}; // seconds
+		float _peer_speed_mesurement_interval_timer {0.f}; // seconds
+		// bytes received for last 6 intervals for peer
+		std::map<std::pair<uint32_t, uint32_t>, std::array<int64_t, _peer_speed_mesurement_interval_count>> _peer_in_bytes_array;
+		size_t _peer_in_bytes_array_index {0}; // current index into _peer_in_bytes_array. !ringbuffer!
+		// when chunk data is received, it is added to _peer_in_bytes_array_index in _peer_in_bytes_array
+		// every _peer_speed_mesurement_interval the avg is calculed and written to _peer_in_speed
+		// and the _peer_in_bytes_array_index is incremented by 1
+		std::map<std::pair<uint32_t, uint32_t>, float> _peer_in_speed;
+		// speed might be not the actual speed, since wrong data is removed afterwards (on "completion")
+		// so it can get negative. this makes this more useful for peer selection, less for userfacing stats
+		// _peer_in_speed feeds directly into _peer_in_targets_dist
+		std::vector<std::pair<uint32_t, uint32_t>> _peer_in_targets;
+		std::discrete_distribution<size_t> _peer_in_targets_dist;
+
 };
 
 } // States

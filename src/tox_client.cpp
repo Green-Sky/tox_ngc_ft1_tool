@@ -105,6 +105,7 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	//CALLBACK_REG(friend_lossy_packet);
 	//CALLBACK_REG(friend_lossless_packet);
 
+	TOX_CALLBACK_REG(group_peer_name);
 	TOX_CALLBACK_REG(group_custom_packet);
 	TOX_CALLBACK_REG(group_custom_private_packet);
 	TOX_CALLBACK_REG(group_invite);
@@ -229,6 +230,14 @@ std::string ToxClient::getOwnAddress(void) const {
 	return bin2hex(self_addr);
 }
 
+std::string_view ToxClient::getGroupPeerName(uint32_t group_number, uint32_t peer_number) const {
+	if (_groups.count(group_number) && _groups.at(group_number).count(peer_number)) {
+		return _groups.at(group_number).at(peer_number).name;
+	} else {
+		return {""};
+	}
+}
+
 void ToxClient::onToxSelfConnectionStatus(TOX_CONNECTION connection_status) {
 	std::cout << "TCL self status: ";
 	switch (connection_status) {
@@ -255,6 +264,20 @@ void ToxClient::onToxFriendRequest(const uint8_t* public_key, std::string_view m
 	_tox_profile_dirty = true;
 }
 
+void ToxClient::onToxGroupPeerName(uint32_t group_number, uint32_t peer_id, std::string_view name) {
+	std::cout << "TCL peer " << group_number << ":" << peer_id << " is now known as " << name << "\n";
+	_groups[group_number][peer_id].name = name;
+}
+
+void ToxClient::onToxGroupPeerConnection(uint32_t group_number, uint32_t peer_id, TOX_CONNECTION connection_status) {
+	std::cout << "TCL peer " << group_number << ":" << peer_id << " status: ";
+	switch (connection_status) {
+		case TOX_CONNECTION::TOX_CONNECTION_NONE: std::cout << "offline\n"; break;
+		case TOX_CONNECTION::TOX_CONNECTION_TCP: std::cout << "TCP-relayed\n"; break;
+		case TOX_CONNECTION::TOX_CONNECTION_UDP: std::cout << "UDP-direct\n"; break;
+	}
+}
+
 void ToxClient::onToxGroupCustomPacket(uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length) {
 	// TODO: signal private?
 	NGC_EXT_handle_group_custom_packet(_tox, _ext_ctx, group_number, peer_id, data, length);
@@ -274,8 +297,23 @@ void ToxClient::onToxGroupInvite(uint32_t friend_number, const uint8_t* invite_d
 
 void ToxClient::onToxGroupPeerJoin(uint32_t group_number, uint32_t peer_id) {
 	std::cout << "TCL group peer join " << group_number << ":" << peer_id << "\n";
-	//_groups[group_number].emplace(peer_id);
-	_groups[group_number][peer_id] = tox_group_peer_get_connection_status(_tox, group_number, peer_id, nullptr);
+
+	std::vector<uint8_t> tmp_name;
+	{
+		Tox_Err_Group_Peer_Query err;
+		size_t length = tox_group_peer_get_name_size(_tox, group_number, peer_id, &err);
+		if (err == Tox_Err_Group_Peer_Query::TOX_ERR_GROUP_PEER_QUERY_OK) {
+			tmp_name.resize(length, '\0');
+			tox_group_peer_get_name(_tox, group_number, peer_id, tmp_name.data(), nullptr);
+		}
+	}
+	tmp_name.push_back('\0'); // make sure its null terminated
+
+	_groups[group_number][peer_id] = {
+		tox_group_peer_get_connection_status(_tox, group_number, peer_id, nullptr),
+		reinterpret_cast<const char*>(tmp_name.data())
+	};
+
 	_tox_profile_dirty = true;
 }
 
