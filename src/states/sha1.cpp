@@ -145,46 +145,50 @@ bool SHA1::iterate(float delta) {
 			// send init to _queue_requested_info
 			const auto [group_number, peer_number] = _queue_requested_info.front();
 
-			uint8_t transfer_id {0};
+			if (_tcl.getGroupPeerConnectionStatus(group_number, peer_number) != TOX_CONNECTION_NONE) {
+				uint8_t transfer_id {0};
 
-			if (_tcl.sendFT1InitPrivate(
-				group_number, peer_number,
-				NGC_FT1_file_kind::HASH_SHA1_INFO,
-				_sha1_info_hash.data.data(), _sha1_info_hash.size(), // id (info hash)
-				_sha1_info_data.size(), // "file_size"
-				transfer_id
-			)) {
-				_transfers_requested_info.push_back({
+				if (_tcl.sendFT1InitPrivate(
 					group_number, peer_number,
-					transfer_id,
-					0.f
-				});
+					NGC_FT1_file_kind::HASH_SHA1_INFO,
+					_sha1_info_hash.data.data(), _sha1_info_hash.size(), // id (info hash)
+					_sha1_info_data.size(), // "file_size"
+					transfer_id
+				)) {
+					_transfers_requested_info.push_back({
+						group_number, peer_number,
+						transfer_id,
+						0.f
+					});
 
-				_queue_requested_info.pop_front();
+					_queue_requested_info.pop_front();
+				}
 			}
 		} else if (!_queue_requested_chunk.empty()) { // then check for chunk requests
 			const auto [group_number, peer_number, chunk_hash, _] = _queue_requested_chunk.front();
 
-			size_t chunk_index = chunkIndex(chunk_hash).value();
-			size_t chunk_file_size = chunkSize(chunk_index);
+			if (_tcl.getGroupPeerConnectionStatus(group_number, peer_number) != TOX_CONNECTION_NONE) {
+				size_t chunk_index = chunkIndex(chunk_hash).value();
+				size_t chunk_file_size = chunkSize(chunk_index);
 
-			uint8_t transfer_id {0};
+				uint8_t transfer_id {0};
 
-			if (_tcl.sendFT1InitPrivate(
-				group_number, peer_number,
-				NGC_FT1_file_kind::HASH_SHA1_CHUNK,
-				chunk_hash.data.data(), chunk_hash.size(), // id (chunk hash)
-				chunk_file_size,
-				transfer_id
-			)) {
-				_transfers_sending_chunk.push_back({
+				if (_tcl.sendFT1InitPrivate(
 					group_number, peer_number,
-					transfer_id,
-					0.f,
-					chunk_index
-				});
+					NGC_FT1_file_kind::HASH_SHA1_CHUNK,
+					chunk_hash.data.data(), chunk_hash.size(), // id (chunk hash)
+					chunk_file_size,
+					transfer_id
+				)) {
+					_transfers_sending_chunk.push_back({
+						group_number, peer_number,
+						transfer_id,
+						0.f,
+						chunk_index
+					});
 
-				_queue_requested_chunk.pop_front();
+					_queue_requested_chunk.pop_front();
+				}
 			}
 		}
 	}
@@ -284,6 +288,7 @@ bool SHA1::iterate(float delta) {
 		float up_kibs {(bytes_up_since / 1024.f) / log_interval};
 		float down_kibs {(bytes_down_since / 1024.f) / log_interval};
 
+		std::cout << std::string(40, '-') << "\n";
 		std::cout << "SHA1 speed down: " << down_kibs << "KiB/s up: " << up_kibs << "KiB/s\n";
 		std::cout << "SHA1 total down: " << _bytes_down / 1024 << "KiB   up: " << _bytes_up / 1024 << "KiB\n";
 
@@ -297,6 +302,7 @@ bool SHA1::iterate(float delta) {
 				<< "    " << speed / 1024.f << "KiB/s\n"
 			;
 		}
+		std::cout << std::string(40, '-') << "\n";
 	}
 
 	// TODO: unmap and remap the file every couple of minutes to keep ram usage down?
