@@ -122,11 +122,11 @@ ToxClient::ToxClient(const CommandLine& cl) :
 	_ext_ctx = NGC_EXT_new();
 
 	NGC_FT1_options ft1_options {};
-	ft1_options.acks_per_packet = 5;
-	ft1_options.init_retry_timeout_after = 10.f;
-	ft1_options.sending_resend_without_ack_after = 5.f;
-	ft1_options.sending_give_up_after = 30.f;
-	ft1_options.packet_window_size = 10;
+	ft1_options.acks_per_packet = cl.ft_acks_per_packet;
+	ft1_options.init_retry_timeout_after = cl.ft_init_retry_timeout_after;
+	ft1_options.sending_resend_without_ack_after = cl.ft_sending_resend_without_ack_after;
+	ft1_options.sending_give_up_after = cl.ft_sending_give_up_after;
+	ft1_options.packet_window_size = cl.ft_packet_window_size;
 	_ft1_ctx = NGC_FT1_new(&ft1_options);
 	NGC_FT1_register_ext(_ft1_ctx, _ext_ctx);
 
