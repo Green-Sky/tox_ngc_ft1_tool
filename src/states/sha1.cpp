@@ -32,7 +32,7 @@ SHA1::SHA1(
 
 	_udp_only = cl.request_only_from_udp_peer;
 	_max_concurrent_in = cl.max_incoming_transfers;
-	_max_concurrent_out = cl.max_incoming_transfers;
+	_max_concurrent_out = cl.max_outgoing_transfers;
 
 	// build lookup table
 	for (size_t i = _sha1_info.chunks.size(); i > 0; i--) {
