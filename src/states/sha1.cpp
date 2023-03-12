@@ -168,6 +168,10 @@ bool SHA1::iterate(float delta) {
 			const auto [group_number, peer_number, chunk_hash, _] = _queue_requested_chunk.front();
 
 			if (_tcl.getGroupPeerConnectionStatus(group_number, peer_number) != TOX_CONNECTION_NONE) {
+				if (!chunkIndex(chunk_hash).has_value()) {
+					std::cerr << "!chunkIndex(chunk_hash).has_value()\n";
+					exit(1);
+				}
 				size_t chunk_index = chunkIndex(chunk_hash).value();
 				size_t chunk_file_size = chunkSize(chunk_index);
 

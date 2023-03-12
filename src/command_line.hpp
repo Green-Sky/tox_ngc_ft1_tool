@@ -60,12 +60,8 @@ struct CommandLine {
 	size_t ft_acks_per_packet {3};
 	// --ft_init_retry_timeout_after
 	float ft_init_retry_timeout_after {5.f};
-	// --ft_sending_resend_without_ack_after
-	float ft_sending_resend_without_ack_after {3.f};
 	// --ft_sending_give_up_after
 	float ft_sending_give_up_after {30.f};
-	// --ft_packet_window_size
-	size_t ft_packet_window_size {8};
 
 	// ---- TODO ----
 

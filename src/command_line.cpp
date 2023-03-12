@@ -119,9 +119,7 @@ CommandLine::CommandLine(int argc, char** argv) {
 			std::cout << "CL set tox_port to " << tox_port << "\n";
 		} else if (parser.parseParam("--ft_ack_per_packet", ft_acks_per_packet)) {
 		} else if (parser.parseParam("--ft_init_retry_timeout_after", ft_init_retry_timeout_after)) {
-		} else if (parser.parseParam("--ft_sending_resend_without_ack_after", ft_sending_resend_without_ack_after)) {
 		} else if (parser.parseParam("--ft_sending_give_up_after", ft_sending_give_up_after)) {
-		} else if (parser.parseParam("--ft_packet_window_size", ft_packet_window_size)) {
 		} else if (parser.parseParam("-I", max_incoming_transfers)) {
 		} else if (parser.parseParam("-O", max_outgoing_transfers)) {
 		} else {

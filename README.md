@@ -54,9 +54,7 @@ $ tox_ngc_ft1_tool
  FT1:
  --ft_ack_per_packet
  --ft_init_retry_timeout_after
- --ft_sending_resend_without_ack_after
  --ft_sending_give_up_after
- --ft_packet_window_size
 
  transfer logic:
  -I <max_incoming_transfers>
