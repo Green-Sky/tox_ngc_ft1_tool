@@ -2,6 +2,8 @@
 
 #include <tox/tox.h>
 
+extern "C" {
+
 // logging
 void log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func, const char *message, void *user_data);
 
@@ -51,4 +53,6 @@ void ft1_recv_request_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t pe
 bool ft1_recv_init_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t* file_id, size_t file_id_size, const uint8_t transfer_id, const size_t file_size, void* user_data);
 void ft1_recv_data_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, const uint8_t* data, size_t data_size, void* user_data);
 void ft1_send_data_sha1_chunk_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t transfer_id, size_t data_offset, uint8_t* data, size_t data_size, void* user_data);
+
+} // extern C
 
