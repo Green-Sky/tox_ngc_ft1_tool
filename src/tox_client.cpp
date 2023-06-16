@@ -5,6 +5,7 @@
 
 #include "./states/send_start_sha1.hpp"
 #include "./states/receive_start_sha1.hpp"
+#include "toxcore/tox.h"
 
 #include <memory>
 #include <sodium.h>
@@ -212,6 +213,26 @@ bool ToxClient::iterate(void) {
 		}
 	}
 
+	_rejoin_group_timer -= time_delta;
+	if (_rejoin_group_timer <= 0.f) {
+		_rejoin_group_timer = 6.f * 60.f;
+		std::cerr << "TCL rejoin timer!\n";
+
+		forEachGroup([this](const uint32_t group_number) {
+			// is connected or trying to connect
+			if (!tox_group_is_connected(_tox, group_number, nullptr)) {
+				std::cerr << "TCL disconnected group " << group_number << "\n";
+				return;
+			}
+
+			// never seen another peer
+			if (_groups.at(group_number).empty()) {
+				tox_group_reconnect(_tox, group_number, nullptr);
+				std::cerr << "TCL reconnecting empty group " << group_number << "\n";
+			}
+		});
+	}
+
 	if (_tox_profile_dirty) {
 		saveToxProfile();
 	}
@@ -249,9 +270,20 @@ void ToxClient::onToxSelfConnectionStatus(TOX_CONNECTION connection_status) {
 	}
 
 	if (connection_status != TOX_CONNECTION::TOX_CONNECTION_NONE && !_join_group_after_dht_connect.empty()) {
-		// TODO: error checking
-		tox_group_join(_tox, _join_group_after_dht_connect.data(), nullptr, 0, nullptr, 0, nullptr);
-		std::cout << "TCL joining group " << bin2hex(_join_group_after_dht_connect) << "\n";
+		Tox_Err_Group_Join err;
+		uint32_t new_group_number = tox_group_join(
+			_tox,
+			_join_group_after_dht_connect.data(),
+			reinterpret_cast<const uint8_t*>(_self_name.data()), _self_name.size(),
+			nullptr, 0,
+			&err
+		);
+		if (err == TOX_ERR_GROUP_JOIN_OK) {
+			std::cout << "TCL joining group " << bin2hex(_join_group_after_dht_connect) << "\n";
+			_groups[new_group_number] = {};
+		} else {
+			std::cerr << "TCL error joining group failed " << err << "\n";
+		}
 		_join_group_after_dht_connect.clear();
 	}
 

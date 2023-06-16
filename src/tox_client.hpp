@@ -87,6 +87,7 @@ struct ToxClient {
 		bool _tox_profile_dirty {false}; // set in callbacks
 
 		std::vector<uint8_t> _join_group_after_dht_connect;
+		float _rejoin_group_timer {4.f * 60.f};
 
 		std::unique_ptr<StateI> _state;
 
