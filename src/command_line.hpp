@@ -69,7 +69,7 @@ struct CommandLine {
 	// -I max_incoming_transfers
 	size_t max_incoming_transfers {32};
 	// -O max_outgoing_transfers
-	size_t max_outgoing_transfers {16};
+	size_t max_outgoing_transfers {8};
 	// -u request chunks only from UDP-direct peers
 	bool request_only_from_udp_peer {false};
 
