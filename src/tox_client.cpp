@@ -5,7 +5,6 @@
 
 #include "./states/send_start_sha1.hpp"
 #include "./states/receive_start_sha1.hpp"
-#include "toxcore/tox.h"
 
 #include <memory>
 #include <sodium.h>
