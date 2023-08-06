@@ -36,7 +36,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL
 	)
 
 	if (NOT WIN32)
-		link_libraries(-fsanitize=address,undefined)
+		#link_libraries(-fsanitize=address,undefined)
 		#link_libraries(-fsanitize=undefined)
 	endif()
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")

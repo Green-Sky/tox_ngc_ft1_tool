@@ -215,7 +215,6 @@ bool ToxClient::iterate(void) {
 	_rejoin_group_timer -= time_delta;
 	if (_rejoin_group_timer <= 0.f) {
 		_rejoin_group_timer = 6.f * 60.f;
-		std::cerr << "TCL rejoin timer!\n";
 
 		forEachGroup([this](const uint32_t group_number) {
 			// is connected or trying to connect
