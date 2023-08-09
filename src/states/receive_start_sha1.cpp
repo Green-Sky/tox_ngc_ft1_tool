@@ -176,10 +176,10 @@ void ReceiveStartSHA1::onFT1ReceiveDataSHA1Info(uint32_t group_number, uint32_t 
 			std::cerr << "ReceiveStartSHA1 received info's hash does not match!, discarding\n";
 			_transfer.reset();
 			_sha1_info_data.clear();
+		} else {
+			std::cout << "ReceiveStartSHA1 info tansfer finished " << group_number << ":" << peer_number << "." << int(transfer_id) << "\n";
+			_done = true;
 		}
-
-		std::cout << "ReceiveStartSHA1 info tansfer finished " << group_number << ":" << peer_number << "." << int(transfer_id) << "\n";
-		_done = true;
 	}
 }
 
